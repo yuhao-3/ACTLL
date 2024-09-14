@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# add '--ucr 128' for training all datasets in UCR
+# --label_noise 0: symmetric noise
+# --label_noise 1: asymmetric noise
+# --label_noise -1: instance-depended noise
+
+############# Symmetric NOISE #############
+nohup python src/Sel_CL_experiment.py \
+    --dataset MIMIC \
+    --outfile Sel_CL \
+    --ni 0.1 \
+    --label_noise 0 \
+    --model Sel_CL\
+    --modelloss Focal \
+    --epochs 30 \
+
+nohup python src/Sel_CL_experiment.py \
+    --dataset MIMIC \
+    --outfile Sel_CL \
+    --ni 0.2 \
+    --label_noise 0 \
+    --model Sel_CL\
+    --modelloss Focal \
+    --epochs 30 \
+
+
+nohup python src/Sel_CL_experiment.py \
+    --dataset MIMIC \
+    --outfile Sel_CL \
+    --ni 0.3 \
+    --label_noise 0 \
+    --model Sel_CL\
+    --modelloss Focal \
+    --epochs 30 \
+
+
+nohup python src/Sel_CL_experiment.py \
+    --dataset MIMIC \
+    --outfile Sel_CL\
+    --ni 0.4 \
+    --label_noise 0 \
+    --model Sel_CL \
+    --modelloss Focal \
+    --epochs 30 \
+
+
+nohup python src/Sel_CL_experiment.py \
+    --dataset MIMIC \
+    --outfile Sel_CL \
+    --ni 0.5 \
+    --label_noise 0 \
+    --model Sel_CL\
+    --modelloss Focal \
+    --epochs 30 \
+
+
+
+######## Asymmetric NOISE #############
+nohup python src/Sel_CL_experiment.py \
+    --dataset MIMIC \
+    --outfile Sel_CL \
+    --ni 0.1 \
+    --label_noise 1 \
+    --model Sel_CL \
+    --modelloss Focal \
+    --epochs 30 \
+
+nohup python src/Sel_CL_experiment.py \
+    --dataset MIMIC \
+    --outfile Sel_CL\
+    --ni 0.2 \
+    --label_noise 1 \
+    --model Sel_CL \
+    --modelloss Focal \
+    --epochs 30 \
+
+
+nohup python src/Sel_CL_experiment.py \
+    --dataset MIMIC \
+    --outfile Sel_CL \
+    --ni 0.3 \
+    --label_noise 1 \
+    --model Sel_CL \
+    --modelloss Focal \
+    --epochs 30 \
+
+
+######## INSTANCE DEPENDENT NOISE #############
+
+nohup python src/Sel_CL_experiment.py \
+    --dataset MIMIC \
+    --outfile Sel_CL \
+    --ni 0.3 \
+    --label_noise -1 \
+    --model Sel_CL \
+
+
+nohup python src/Sel_CL_experiment.py \
+    --dataset MIMIC \
+    --outfile Sel_CL \
+    --ni 0.4 \
+    --label_noise -1 \
+    --model Sel_CL \
+###########################################################################################################
+
+

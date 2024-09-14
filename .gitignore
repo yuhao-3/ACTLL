@@ -1,0 +1,6 @@
+data/
+results/
+*data_files*
+*.err*
+*.out*
+*.csv*
