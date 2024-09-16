@@ -17,19 +17,19 @@
 
 python src/main.py \
     --dataset MIMIC \
-    --outfile ACTLL_TimeCNN_BMMv2_Focal \
+    --outfile ACTLL_TimeCNN_BMMv2_CrossEntorpy_CORR100 \
     --ni 0.1 \
     --label_noise 0 \
     --model ACTLLv2 \
-    --modelloss Focal \
-    --epochs 250 \
-    --lr 1e-4 \
+    --modelloss CrossEntropy \
+    --epochs 150 \
+    --lr 2e-4 \
     --sel_method 5 \
     --AEChoice TimeAtteCNN \
     --augment True \
     --corr True\
-    --correct_start 30\
-    --correct_end 90\   
+    --correct_start 20\
+    --correct_end 200\     
 
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##

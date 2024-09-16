@@ -1,19 +1,20 @@
-apex==0.9.10dev
+# apex==0.9.10dev
 # faiss==1.5.3
-ipython==8.5.0
+# ipython==8.5.0
+# Use python 3.10
 matplotlib==3.5.0
 networkx==2.6.3
-# numpy==1.21.2
+numpy==1.22
 pandas==1.3.5
 Pillow==9.2.0
 psutil==5.9.0
 pyts==0.12.0
 scikit_learn==1.1.2
-scipy==1.6.3
-seaborn==0.11.2
-torch==1.11.0+cu113
+# scipy==1.6.3      #Scipy and torch are contradicted python =3.9 vs python=3.10
+seaborn==0.11.2     
+# torch==1.11.0+cu113 # pip install torch==1.11.0+cu113 -f https://download.pytorch.org/whl/torch_stable.html 
 torchnet==0.0.4
-torchvision==0.12.0+cu113
+# torchvision==0.12.0+cu113 # pip install torchvision==0.12.0+cu113 -f https://download.pytorch.org/whl/torch_stable.html
 tqdm==4.28.1
 tsaug==0.2.1
 tslearn==0.5.2

@@ -1303,6 +1303,9 @@ def select_sample_from_BMM(model_loss, loss_all, bmm_models, args, x_idxs, epoch
     indexes = np.array(range(len(loss_mean)))
     rate=(loss_mean<=loss_mean.mean()).mean()
     
+    
+    # new_model_loss = model_loss.copy()
+    
     for i in range(args.nbins):
         each_label_loss = loss_mean[labels_numpy==i]
 
@@ -1330,7 +1333,6 @@ def select_sample_from_BMM(model_loss, loss_all, bmm_models, args, x_idxs, epoch
             # This is clean probability!
             prob = bmm_models[i].posterior(feats_,bmm_models[i].means_argmin())
             
-            
             mean_clean = bmm_models[i].means_()[bmm_models[i].means_argmin()]
             mean_noisy = bmm_models[i].means_()[bmm_models[i].means_argmax()]
             
@@ -1341,7 +1343,7 @@ def select_sample_from_BMM(model_loss, loss_all, bmm_models, args, x_idxs, epoch
             # Clamp thresholds to valid probability range [0, 1]
             p_threshold = np.clip(p_threshold, 0, 1)
             less_p_threshold = np.clip(less_p_threshold, 0, 1)
-                        
+                            
             # Add confident index
             clean_labels += [clean_idx for clean_idx in range(len(cls_index)) if
                                 prob[clean_idx] >= p_threshold]
@@ -1351,17 +1353,23 @@ def select_sample_from_BMM(model_loss, loss_all, bmm_models, args, x_idxs, epoch
 
             less_confident_idx = torch.tensor(less_confident_labels).long()
             model_sm_idx = torch.tensor(clean_labels).long()
-    
+            
             
         else:
+            
             _, model_sm_idx = torch.topk(torch.from_numpy(each_label_loss), k=int(each_label_loss.size*rate), largest=False)
+            # # Only one instance.. 
+            # prob_epoch[model_sm_idx] = 0.5
             _, less_confident_idx = torch.topk(torch.from_numpy(each_label_loss), k=int(each_label_loss.size*rate), largest=True)
         
         all_sm_idx=torch.concat((all_sm_idx,batch_idx[labels_numpy==i][model_sm_idx]))
 
+
     model_loss_filter = torch.zeros((model_loss.size(0))).to(device)
     model_loss_filter[all_sm_idx] = 1.0
-    model_loss = (model_loss_filter * model_loss).sum()
+    model_loss = (model_loss_filter * model_loss).mean()
+    
+    
     
     return model_loss, all_sm_idx, less_confident_idx
     
@@ -1505,3 +1513,37 @@ class BetaMixture1D(object):
     
     
     
+
+
+
+
+
+############################# Mixup original #################################
+def mixup_data(x, y, alpha=1.0, device='cuda'):
+    '''Returns mixed inputs, pairs of targets, and lambda'''
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+
+    batch_size = x.size()[0]
+    if device == 'cuda':
+        index = torch.randperm(batch_size).cuda()
+    else:
+        index = torch.randperm(batch_size)
+
+    mixed_x = lam * x + (1 - lam) * x[index, :]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
+
+
+
+def mixup_criterion_mixSoft(pred, y_a, y_b, B, lam, index, output_x1, output_x2):
+    return torch.sum(
+        (lam) * (
+                (1 - B) * F.nll_loss(pred, y_a, reduction='none') + B * (
+            -torch.sum(F.softmax(output_x1, dim=1) * pred, dim=1))) +
+        (1 - lam) * (
+                (1 - B[index]) * F.nll_loss(pred, y_b, reduction='none') + B[index] * (
+            -torch.sum(F.softmax(output_x2, dim=1) * pred, dim=1)))) / len(
+        pred)

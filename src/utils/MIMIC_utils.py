@@ -5,6 +5,9 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import Dataset, DataLoader
 
+import os
+
+
 
 # ---------------------------------------------------------------------------------------
 "Global variables for specific dataset information loading."
@@ -151,7 +154,7 @@ class CustomDataset(Dataset):
 
     def _load(self, data_name, window=4):
 
-        data_fd = '../data/MIMIC/processed/'
+        data_fd = 'data/MIMIC/processed/'
         # for Kaggle:
         # data_fd = f"/kaggle/input/mimic-processed/"
         try:
@@ -160,7 +163,7 @@ class CustomDataset(Dataset):
             print(data_fd)
 
         if "MIMIC" in data_name:
-
+            print(os.getcwd())
             X = pd.read_csv(data_fd + "vitals_process.csv",
                             parse_dates=MIMIC_PARSE_TIME_VARS, header=0, index_col=0)
             y = pd.read_csv(

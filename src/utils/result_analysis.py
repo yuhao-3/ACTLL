@@ -2,7 +2,7 @@ import os
 import pandas as pd
 
 # Directory containing the CSV files
-csv_dir = "././statistic_results/ACTLL_ablation_2_epoch100"
+csv_dir = "././statistic_results/ACTLL_ablation_3_epoch300"
 
 # List of model names you want to analyze
 model_names = ['ACTLL_TimeCNN_BMM', 'ACTLL_Diff_BMM_noAug', 'ACTLL_Diff_BMM_corr',
@@ -10,7 +10,7 @@ model_names = ['ACTLL_TimeCNN_BMM', 'ACTLL_Diff_BMM_noAug', 'ACTLL_Diff_BMM_corr
                'ACTLL_Diff_GMM', 'ACTLL_Diff_SLoss', 'MixUp_BMM',
                'CTW', 'SREA']
 
-model_names=['ACTLL_TimeCNN_BMM','CTW','MixUp_BMM']
+model_names=['CTW']
 
 
 # Function to analyze each CSV file and extract performance by noise level and noise rate for both MIMIC and overall dataset

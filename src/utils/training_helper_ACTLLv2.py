@@ -21,7 +21,7 @@ from src.models.MultiTaskClassification import NonLinClassifier, MetaModel_AE
 from src.models.model import CNNAE, DiffusionAE, AttenDiffusionAE, TimeAttentionCNNAE, TransformerAE, InceptionTemporalAE
 from src.utils.saver import Saver
 from src.utils.utils import readable, reset_seed_, reset_model, flip_label, remove_empty_dirs, \
-    evaluate_class, to_one_hot,small_loss_criterion_EPS, select_class_by_class, FocalLoss, CentroidLoss, reduce_loss, cluster_accuracy
+    evaluate_class, to_one_hot,small_loss_criterion_EPS, select_class_by_class, FocalLoss, CentroidLoss, reduce_loss, cluster_accuracy, mixup_data
 from src.utils.loss import ActivePassiveLoss
 
 from src.plot.visualization import t_sne,t_sne_during_train
@@ -260,8 +260,6 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
                 # Fit beta mixture models based on warmup loss(First)
                 # Fit n-classes 2-component BMM Models
                 bmm_models= fit_bmm_models(loss_all = loss_all, data_loader = train_loader, args = args, epoch = e)
-                # dpm_models = fit_dpm_models(loss_all = loss_all, data_loader = train_loader, args = args, epoch = e)
-                
                 
                 loss_all, train_accuracy, avg_loss, model_new, confident_set_id = train_step_ACTLLv2(
                     data_loader=train_loader,
@@ -685,18 +683,26 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
         prob_avg = torch.mean(prob, dim=0)
 
         loss = criterion(out, y_hat)
+        
 
         if loss_all is not None:
             loss_all[x_idx, epoch] = loss.data.detach().clone().cpu().numpy()
             
 
         ################# L_CONF ######################
-        # Use fitted BMM Model after each epoch          
+        # Use fitted BMM Model after each epoch   
+        
+        # inputs, targets_a, targets_b, lam = mixup_data(x, y_hat, 1.0, device)
+        # output = F.log_softmax(out, dim=1)
+
+        # def mixup_criterion(pred, y_a, y_b, lam):
+        #     return lam * F.nll_loss(pred, y_a, reduction='none') + (1 - lam) * F.nll_loss(pred, y_b, reduction='none')
+        
+        # loss = mixup_criterion(output, targets_a, targets_b, lam)
+        
+    
         L_conf, model_sel_idx, less_confident_idxs = select_sample_from_BMM(loss, loss_all, bmm_models, args, x_idx, epoch, y_hat)
-        
-                
-        # L_conf, model_sel_idx, less_confident_idxs = select_sample_from_DPM(loss, loss_all, bmm_models, args, x_idx, epoch, y_hat)
-        
+          
         
         # ################# L_AUG #######################
         # Data Augmentation after selecting clean samples
@@ -727,6 +733,7 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
             
         alpha_, beta_, gamma_, epsilon_, rho_ = alpha, beta, gamma, epsilon, rho
 
+
         ################## L_CORR + DATA CORRECTION FOR LESS CONFIDENT EXAMPLES ##############
         if len(less_confident_idxs) > 0 and args.corr == True:
             w_yhat = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=0, high_val=1 * beta)  # Pred
@@ -751,6 +758,8 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
             
             y_corrected = y_hat.clone()
             y_corrected[less_confident_idxs] = corrected_labels[less_confident_idxs]
+            
+ 
             L_corr = criterion(out[less_confident_idxs], y_corrected[less_confident_idxs]).mean()
         
         
@@ -773,9 +782,8 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
 
 
         model_loss = L_conf + args.L_aug_coef * aug_model_loss + args.L_rec_coef * recon_loss + \
-             gamma_ * clustering_loss + beta_ * L_corr + rho_ * L_p + epsilon_ * L_e
-        # model_loss = L_conf  + args.L_rec_coef * recon_loss + 1 * clustering_loss + 1* L_corr + 1*L_p + 1* L_e
-           
+             gamma_ * clustering_loss + 100 * L_corr + rho_ * L_p + epsilon_ * L_e
+    
         # Loss exchange
         optimizer.zero_grad()
         

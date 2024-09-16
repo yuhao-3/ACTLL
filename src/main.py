@@ -130,7 +130,7 @@ def parse_args():
     # Suppress terminal out
     parser.add_argument('--disable_print', action='store_true', default=False)
     parser.add_argument('--plt_embedding', action='store_true', default=False)
-    parser.add_argument('--plt_loss_hist', action='store_true', default=False)
+    parser.add_argument('--plt_loss_hist', action='store_true', default=True)
     parser.add_argument('--plt_cm', action='store_true', default=False)
     parser.add_argument('--headless', action='store_true', default=False, help='Matplotlib backend')
     parser.add_argument('--beta',type=float,nargs='+',default=[0.,3.],help='the coefficient of model_loss2')
