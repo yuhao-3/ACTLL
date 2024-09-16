@@ -18,7 +18,7 @@ from sklearn.metrics import accuracy_score, f1_score, classification_report, con
 from scipy.special import softmax
 
 from src.models.MultiTaskClassification import NonLinClassifier, MetaModel_AE
-from src.models.model import CNNAE, DiffusionAE, AttenDiffusionAE, TimeAttentionCNNAE, TransformerAE, InceptionTemporalAE
+from src.models.model import CNNAE, DiffusionAE, AttenDiffusionAE, TimeAttentionCNNAE, TransformerAE
 from src.utils.saver import Saver
 from src.utils.utils import readable, reset_seed_, reset_model, flip_label, remove_empty_dirs, \
     evaluate_class, to_one_hot,small_loss_criterion_EPS, select_class_by_class, FocalLoss, CentroidLoss, reduce_loss, cluster_accuracy

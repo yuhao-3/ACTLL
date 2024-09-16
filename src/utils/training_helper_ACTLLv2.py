@@ -18,7 +18,7 @@ from sklearn.metrics import accuracy_score, f1_score, classification_report, con
 from scipy.special import softmax
 
 from src.models.MultiTaskClassification import NonLinClassifier, MetaModel_AE
-from src.models.model import CNNAE, DiffusionAE, AttenDiffusionAE, TimeAttentionCNNAE, TransformerAE, InceptionTemporalAE
+from src.models.model import CNNAE, DiffusionAE, AttenDiffusionAE, TimeAttentionCNNAE, TransformerAE
 from src.utils.saver import Saver
 from src.utils.utils import readable, reset_seed_, reset_model, flip_label, remove_empty_dirs, \
     evaluate_class, to_one_hot,small_loss_criterion_EPS, select_class_by_class, FocalLoss, CentroidLoss, reduce_loss, cluster_accuracy, mixup_data
@@ -255,7 +255,7 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
                                                                             epoch=e,
                                                                             loss_all=loss_all,
                                                                             args=args)
-                
+
             else:
                 # Fit beta mixture models based on warmup loss(First)
                 # Fit n-classes 2-component BMM Models
@@ -632,7 +632,19 @@ def label_correction(embedding, centers, y_obs, yhat_hist, w_yhat, w_c, w_obs, c
     
     
     # Label combining
-    ystar = (yhat + yc + yobs) / 3
+    # Assign dynamic weights based on confidence
+    confidence_yhat = torch.max(F.softmax(yhat_hist.mean(dim=-1), dim=1), dim=1)[0]
+    confidence_yc = 1.0 / torch.min(distance_centers, dim=1)[0]  # Higher confidence for closer clusters
+    confidence_yobs = torch.max(F.softmax(yobs, dim=1), dim=1)[0]
+
+    # Normalize weights
+    total_confidence = confidence_yhat + confidence_yc + confidence_yobs
+    w_yhat = confidence_yhat / total_confidence
+    w_c = confidence_yc / total_confidence
+    w_obs = confidence_yobs / total_confidence
+
+    # Weighted combination of sources
+    ystar = (w_yhat * yhat + w_c * yc + w_obs * yobs)
     ystar = torch.argmax(ystar, dim=1)
     
     
@@ -740,14 +752,14 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
             w_c = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=0, high_val=1 * gamma)  # Centers
             w_obs = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=1, high_val=0)  # Observed
             
-            beta_ = temperature(epoch, th_low=init_centers - history_track, th_high=correct_start,
-                                low_val=0, high_val=beta)  # Class
-            gamma_ = temperature(epoch, th_low=correct_start, th_high=correct_end, low_val=0,
-                                    high_val=gamma)  # Centers
-            rho_ = temperature(epoch, th_low=init_centers- correct_start, th_high=correct_end,
-                                low_val=0, high_val=rho * beta_)  # Lp
-            epsilon_ = temperature(epoch, th_low=init_centers - correct_start, th_high=correct_end,
-                                    low_val=0, high_val=epsilon * beta_)  # Le
+            # beta_ = temperature(epoch, th_low=init_centers - history_track, th_high=correct_start,
+            #                     low_val=0, high_val=beta)  # Class
+            # gamma_ = temperature(epoch, th_low=correct_start, th_high=correct_end, low_val=0,
+            #                         high_val=gamma)  # Centers
+            # rho_ = temperature(epoch, th_low=init_centers- correct_start, th_high=correct_end,
+            #                     low_val=0, high_val=rho * beta_)  # Lp
+            # epsilon_ = temperature(epoch, th_low=init_centers - correct_start, th_high=correct_end,
+            #                         low_val=0, high_val=epsilon * beta_)  # Le
             
             
             
@@ -758,7 +770,7 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
             
             y_corrected = y_hat.clone()
             y_corrected[less_confident_idxs] = corrected_labels[less_confident_idxs]
-            
+             
  
             L_corr = criterion(out[less_confident_idxs], y_corrected[less_confident_idxs]).mean()
         
@@ -782,7 +794,7 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
 
 
         model_loss = L_conf + args.L_aug_coef * aug_model_loss + args.L_rec_coef * recon_loss + \
-             gamma_ * clustering_loss + 100 * L_corr + rho_ * L_p + epsilon_ * L_e
+             1 * clustering_loss + 1 * L_corr + 1 * L_p + 1* L_e
     
         # Loss exchange
         optimizer.zero_grad()

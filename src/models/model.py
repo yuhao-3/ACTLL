@@ -284,36 +284,39 @@ class AttenDiffusionAE(MetaAE):
         return x
     
     
-    
-## Time attention CNN encoder for Time Series
 class TimeAttentionCNNEncoder(nn.Module):
     def __init__(self, num_inputs, num_channels, embedding_dim, kernel_size, stride=2, padding=0, dropout=0.2,
-                 normalization='none', num_heads=4):
+                 normalization='none', num_heads=4, seq_len=100):
         super(TimeAttentionCNNEncoder, self).__init__()
-        
+
         # CNN-based feature extraction
         self.cnn_encoder = ConvEncoder(num_inputs, num_channels, embedding_dim, kernel_size, stride, padding, dropout, normalization)
-        
+
+        # Positional encoding
+        self.positional_encoding = nn.Parameter(torch.zeros(seq_len, embedding_dim))
+
         # Multi-head self-attention for temporal attention
         self.attention = nn.MultiheadAttention(embed_dim=embedding_dim, num_heads=num_heads, dropout=dropout)
         self.layer_norm = nn.LayerNorm(embedding_dim)
-        
+
     def forward(self, x):
         # Extract features with the CNN encoder
         x = self.cnn_encoder(x)
         
-        # Reshape the data for attention: [batch_size, embedding_dim, seq_len] -> [seq_len, batch_size, embedding_dim]
+        # Reshape for attention
         x = x.permute(2, 0, 1)
         
+        # Add positional encoding
+        x = x + self.positional_encoding[:x.size(0), :]
+
         # Apply attention to time steps
         attn_output, _ = self.attention(x, x, x)
-        
+
         # Residual connection and normalization
         x = self.layer_norm(attn_output + x)
         
-        # Reshape back to original dimensions: [seq_len, batch_size, embedding_dim] -> [batch_size, embedding_dim, seq_len]
+        # Reshape back to original dimensions
         x = x.permute(1, 2, 0)
-        
         return x
 
 class TimeAttentionCNNAE(MetaAE):
@@ -461,141 +464,3 @@ class TransformerAE(nn.Module):
     
     
     
-######################## Inception Module ######################
-class InceptionBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_sizes=[3, 5, 7, 9], bottleneck_channels=32, residual=True):
-        super(InceptionBlock, self).__init__()
-        self.residual = residual
-
-        # Ensure that in_channels is an integer, since input_size is a single integer
-        assert isinstance(in_channels, int), "in_channels should be an integer"
-        
-        # Bottleneck layer to reduce input channels before applying multiple kernels
-        self.bottleneck = nn.Conv1d(in_channels, bottleneck_channels, kernel_size=1) if in_channels > 1 else nn.Identity()
-
-        # If out_channels is an integer, apply the same number of filters to each convolution
-        if isinstance(out_channels, int):
-            out_channels = [out_channels] * len(kernel_sizes)
-
-        # Ensure the length of out_channels matches kernel_sizes
-        assert len(out_channels) == len(kernel_sizes), "Length of out_channels must match length of kernel_sizes"
-
-        # Apply convolutions with different kernel sizes, each with its own out_channels
-        self.convs = nn.ModuleList([
-            nn.Conv1d(bottleneck_channels, out_channels[i], kernel_size=k, padding=k // 2) for i, k in enumerate(kernel_sizes)
-        ])
-
-        # Pooling layer to combine multi-scale features
-        self.maxpool = nn.MaxPool1d(kernel_size=3, stride=1, padding=1)
-
-        # 1x1 convolution to match the output channels to the sum of all out_channels
-        self.convpool = nn.Conv1d(in_channels, sum(out_channels), kernel_size=1)
-
-    def forward(self, x):
-        # Apply bottleneck layer
-        bottleneck_out = self.bottleneck(x)
-
-        # Apply different convolutions and concatenate the results
-        inception_out = torch.cat([conv(bottleneck_out) for conv in self.convs], dim=1)
-
-        # Apply pooling and the 1x1 convolution
-        maxpool_out = self.convpool(self.maxpool(x))
-
-        # Add the residual connection if enabled
-        if self.residual:
-            return inception_out + maxpool_out
-        else:
-            return inception_out
-        
-class InceptionTemporalEncoder(nn.Module):
-    def __init__(self, input_size, num_filters, embedding_dim, kernel_sizes, num_modules, dropout):
-        super(InceptionTemporalEncoder, self).__init__()
-
-        # Ensure input_size is a single integer
-        assert isinstance(input_size, int), "input_size should be an integer"
-        
-        # Handle num_filters as either a list or a single integer
-        if isinstance(num_filters, int):
-            num_filters_list = [num_filters] * num_modules  # Repeat the same filter size for all blocks
-        else:
-            assert isinstance(num_filters, list), "num_filters should be either an integer or a list"
-            num_filters_list = num_filters
-
-        # Initialize Inception blocks
-        self.inception_blocks = nn.ModuleList([
-            InceptionBlock(input_size if i == 0 else num_filters_list[i - 1], num_filters_list[i], kernel_sizes)
-            for i in range(num_modules)
-        ])
-
-        # Final 1x1 convolution to reduce the output to `batch_size * timestep * 1`
-        self.conv1x1 = nn.Conv1d(num_filters_list[-1], 1, kernel_size=1)  # Reduce channels to 1
-
-    def forward(self, x):
-        for block in self.inception_blocks:
-            x = block(x)
-        x = self.conv1x1(x)  # Reduce channel dimension to 1
-        return x
-    
-    
-    
-class InceptionTemporalDecoder(nn.Module):
-    def __init__(self, embedding_dim, num_filters, seq_len, output_size, kernel_size=3, stride=2, padding=1, dropout=0.2):
-        super(InceptionTemporalDecoder, self).__init__()
-
-        # Reverse the filter list for decoding
-        num_filters = num_filters[::-1]
-
-        # Calculate the compressed length for upsampling
-        self.compressed_len = seq_len // (2 ** len(num_filters))  # Assuming stride 2 across layers
-
-        # Upsample the latent vector to match the reduced sequence length
-        self.upsample = nn.Linear(embedding_dim, self.compressed_len * num_filters[0])
-
-        # Create a list of transposed convolution layers and dropout layers
-        layers = []
-        for i in range(len(num_filters)):
-            in_channels = num_filters[i - 1] if i > 0 else num_filters[0]
-            out_channels = num_filters[i]
-            
-            # Transposed convolution
-            layers.append(nn.ConvTranspose1d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding))
-            
-            # Apply dropout layer after each ConvTranspose1d
-            layers.append(nn.Dropout(dropout))
-
-        self.network = nn.Sequential(*layers)
-
-        # Final 1x1 convolution to restore the original input size
-        self.conv1x1 = nn.Conv1d(num_filters[-1], output_size, kernel_size=1)
-
-    def forward(self, x):
-        # Upsample the latent vector
-        x = self.upsample(x).view(x.size(0), -1, self.compressed_len)
-        
-        # Pass through transposed convolution layers
-        x = self.network(x)
-        
-        # Apply 1x1 convolution to match the output dimension
-        x = self.conv1x1(x)
-        return x 
-    
-    
-    
-class InceptionTemporalAE(nn.Module):
-    def __init__(self, input_size, num_filters, embedding_dim, seq_len, kernel_sizes=[3, 5, 7], num_modules=4, kernel_size=3, stride=2, padding=1, dropout=0.2):
-        super(InceptionTemporalAE, self).__init__()
-
-        # Encoder: Inception Temporal Encoder
-        self.encoder = InceptionTemporalEncoder(input_size, num_filters, embedding_dim, kernel_sizes, num_modules, dropout)
-
-        # Decoder: Inception Temporal Decoder
-        self.decoder = InceptionTemporalDecoder(embedding_dim, num_filters, seq_len, input_size, kernel_size, stride, padding, dropout)
-
-    def forward(self, x):
-        # Encode input
-        encoded = self.encoder(x)
-
-        # Decode the latent representation back to the original input shape
-        decoded = self.decoder(encoded)
-
-        return decoded
