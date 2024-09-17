@@ -22,14 +22,14 @@ python src/main.py \
     --label_noise 0 \
     --model ACTLLv2 \
     --modelloss CrossEntropy \
-    --epochs 120 \
+    --epochs 300 \
     --lr 2e-4 \
     --sel_method 5 \
     --AEChoice TimeAtteCNN \
     --augment True \
     --corr True\
     --correct_start 20\
-    --correct_end 150\     
+    --correct_end 260\     
 
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##

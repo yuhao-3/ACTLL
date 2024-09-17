@@ -5,10 +5,10 @@ import pandas as pd
 csv_dir = "././statistic_results/ACTLL_ablation_3_epoch300"
 
 # List of model names you want to analyze
-model_names = ['ACTLL_TimeCNN_BMM', 'ACTLL_Diff_BMM_noAug', 'ACTLL_Diff_BMM_corr',
-               'ACTLL_AtteDiff_BMM', 'ACTLL_CNN_BMM', 'ACTLL_Diff_BMM_all',
-               'ACTLL_Diff_GMM', 'ACTLL_Diff_SLoss', 'MixUp_BMM',
-               'CTW', 'SREA']
+# model_names = ['ACTLL_TimeCNN_BMM', 'ACTLL_Diff_BMM_noAug', 'ACTLL_Diff_BMM_corr',
+#                'ACTLL_AtteDiff_BMM', 'ACTLL_CNN_BMM', 'ACTLL_Diff_BMM_all',
+#                'ACTLL_Diff_GMM', 'ACTLL_Diff_SLoss', 'MixUp_BMM',
+#                'CTW', 'SREA']
 
 model_names=['CTW']
 
@@ -17,11 +17,15 @@ model_names=['CTW']
 def analyze_csv(file_path, model_name):
     df = pd.read_csv(file_path)
     
-    # Add columns for noise level and noise rate based on file name or content
-    noise_info = os.path.basename(file_path).split('_')[-2:]  # Adjust split to match your naming pattern
-    noise_type = noise_info[0]  # e.g., 'asym', 'sym', 'inst'
-    noise_rate = noise_info[1].replace('.csv', '')  # e.g., '10', '20', etc.
-
+    
+    # Add columns for noise level, noise rate, epoch, and learning rate based on file name or content
+    file_info = os.path.basename(file_path).split('_')
+    
+    print(file_info)
+    
+    noise_type = file_info[-6]  # e.g., 'asym'
+    noise_rate = file_info[-5]  # e.g., '30'
+    
     # Add these as columns to the DataFrame
     df['noise_type'] = noise_type
     df['noise_rate'] = noise_rate
@@ -39,6 +43,7 @@ def process_results(df):
     # Sort by noise type and noise rate (ascending order)
     df = df.sort_values(by=['noise_type', 'noise_rate'], ascending=[True, True])
 
+    print(df)
     # Initialize a result list to store the output for each noise type
     result = []
 
@@ -88,6 +93,7 @@ for model_name in model_names:
             
             # Always check for MIMIC dataset inside the dataset_name column
             df_mimic, df_overall = analyze_csv(file_path, model_name)
+            
 
             # Collect MIMIC-specific rows
             if df_mimic is not None and not df_mimic.empty:

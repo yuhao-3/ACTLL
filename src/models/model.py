@@ -383,47 +383,6 @@ class TransformerEncoderBlock(nn.Module):
 
         return x
     
-    
-# class TransformerDecoderBlock(nn.Module):
-#     def __init__(self, embedding_dim, output_dim, seq_len, num_heads=8, dim_feedforward=512, dropout=0.1):
-#         super(TransformerDecoderBlock, self).__init__()
-
-#         # Transformer Decoder Layer
-#         decoder_layer = nn.TransformerDecoderLayer(d_model=embedding_dim, nhead=num_heads, dim_feedforward=dim_feedforward, dropout=dropout)
-#         self.transformer_decoder = nn.TransformerDecoder(decoder_layer, num_layers=4)
-
-#         # Positional encoding for the decoder
-#         self.positional_encoding = nn.Parameter(torch.randn(1, seq_len, embedding_dim))
-
-#         # Output projection from embedding_dim back to input_dim
-#         self.output_projection = nn.Linear(embedding_dim, output_dim)
-
-#         # Projection to match sequence length
-#         self.projection_to_seq_len = nn.Linear(1, seq_len)
-
-#     def forward(self, latent_seq, memory_seq=None):
-#         # If memory_seq is None, use latent_seq as both query and memory
-#         if memory_seq is None:
-#             memory_seq = latent_seq
-
-#         # Latent sequence comes in with shape [batch_size, embedding_dim]
-#         if len(latent_seq.shape) == 2:  # Ensure latent_seq is 3D
-#             latent_seq = latent_seq.unsqueeze(1)  # Add sequence length: [batch_size, 1, embedding_dim]
-
-#         # Add positional encoding
-#         latent_seq = latent_seq + self.positional_encoding[:, :latent_seq.size(1), :]
-
-#         # Decode the latent representation
-#         x = self.transformer_decoder(latent_seq, memory_seq)
-
-#         # Project back to original input dimensions
-#         x = self.output_projection(x)
-
-#         # Ensure the final projection matches the original sequence length
-#         x = self.projection_to_seq_len(x.transpose(1, 2)).transpose(1, 2)
-
-#         return x  # Return shape: [batch_size, output_dim, seq_len]
-    
 
 class TransformerAE(nn.Module):
     def __init__(self, input_size, embedding_dim, num_heads, num_filters, seq_len, kernel_size, stride=2, padding=0, dropout=0.2, dim_feedforward=512):
@@ -464,3 +423,4 @@ class TransformerAE(nn.Module):
     
     
     
+
