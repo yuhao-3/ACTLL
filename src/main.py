@@ -30,6 +30,7 @@ from src.utils.training_helper_single_model import main_wrapper_single_model
 from src.utils.training_helper_CTW import main_wrapper_CTW
 from src.utils.training_helper_ACTLL import main_wrapper_ACTLL
 from src.utils.training_helper_ACTLLv2 import main_wrapper_ACTLLv2
+from src.utils.training_helper_ACTLLv3 import main_wrapper_ACTLLv3
 from src.utils.training_helper_dividemix import main_wrapper_dividemix
 from src.ucr_data.load_ucr_pre import load_ucr
 from src.uea_data.load_uea_pre import load_uea
@@ -62,7 +63,7 @@ def parse_args():
                                            'sigua', 'single_ae_aug_after_sel','single_aug','single_sel','vanilla',
                                            'single_aug_after_sel','single_ae_sel','single_ae','single_ae_aug',
                                            'single_ae_aug_sel_allaug','single_ae_aug_before_sel','dividemix', 'CTW'
-                                           ,'ACTLLv2'],
+                                           ,'ACTLLv2','ACTLLv3'],
                         default='ACTLL')
     parser.add_argument('--modelloss', choices = ['Focal','ActivePassive','CrossEntropy'], default = 'Focal')
     parser.add_argument('--epochs', type=int, default=30)
@@ -130,7 +131,7 @@ def parse_args():
     # Suppress terminal out
     parser.add_argument('--disable_print', action='store_true', default=False)
     parser.add_argument('--plt_embedding', action='store_true', default=False)
-    parser.add_argument('--plt_loss_hist', action='store_true', default=True)
+    parser.add_argument('--plt_loss_hist', action='store_true', default=False)
     parser.add_argument('--plt_cm', action='store_true', default=False)
     parser.add_argument('--headless', action='store_true', default=False, help='Matplotlib backend')
     parser.add_argument('--beta',type=float,nargs='+',default=[0.,3.],help='the coefficient of model_loss2')
@@ -304,6 +305,8 @@ def main(args, dataset_name=None):
         
         elif args.model in ['ACTLLv2']:
             df_results = main_wrapper_ACTLLv2(args, x_train, x_test, Y_train_clean, Y_test_clean, saver,seed=seeds[seeds_i])
+        elif args.model in ['ACTLLv3']:
+            df_results = main_wrapper_ACTLLv3(args, x_train, x_test, Y_train_clean, Y_test_clean, saver,seed=seeds[seeds_i])
         
         else: # co-teaching, sigua
             df_results = main_wrapper(args, x_train, x_test, Y_train_clean, Y_test_clean, saver,seed=seeds[seeds_i])
@@ -355,6 +358,7 @@ if __name__ == '__main__':
         ucr=['MIMIC','ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
               'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
         
+        # ucr = ['MIMIC']
         # ucr = ['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
         #        'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
         
@@ -367,7 +371,6 @@ if __name__ == '__main__':
         #     "StarlightCurves", 
         #     "Wafer"]
         
-        # ucr=['MIMIC']
         
         # Imbalanced dataset
         # ucr = [

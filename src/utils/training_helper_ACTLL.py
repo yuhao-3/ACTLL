@@ -101,6 +101,8 @@ def add_to_confident_set_id(args=None,confident_set_id=None,train_dataset=None,e
 
         conf_num.append(confnum_row)
     estimate_noise_rate=TP_all/(TP_all+FP_all)
+    print(conf_num)
+    print(estimate_noise_rate)
     return conf_num, estimate_noise_rate
 
 def save_model_and_sel_dict(model,args,sel_dict=None):

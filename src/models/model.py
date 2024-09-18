@@ -284,6 +284,49 @@ class AttenDiffusionAE(MetaAE):
         return x
     
     
+from timm.models.layers import trunc_normal_
+
+class Adaptive_Spectral_Block(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.complex_weight_high = nn.Parameter(torch.randn(dim, 2, dtype=torch.float32) * 0.02)
+        self.complex_weight = nn.Parameter(torch.randn(dim, 2, dtype=torch.float32) * 0.02)
+
+        trunc_normal_(self.complex_weight_high, std=.02)
+        trunc_normal_(self.complex_weight, std=.02)
+        self.threshold_param = nn.Parameter(torch.rand(1))
+
+    def create_adaptive_high_freq_mask(self, x_fft):
+        B, _, _ = x_fft.shape
+        energy = torch.abs(x_fft).pow(2).sum(dim=-1)
+        flat_energy = energy.view(B, -1)
+        median_energy = flat_energy.median(dim=1, keepdim=True)[0]
+        median_energy = median_energy.view(B, 1)
+        epsilon = 1e-6
+        normalized_energy = energy / (median_energy + epsilon)
+        adaptive_mask = ((normalized_energy > self.threshold_param).float() - self.threshold_param).detach() + self.threshold_param
+        adaptive_mask = adaptive_mask.unsqueeze(-1)
+        return adaptive_mask
+
+    def forward(self, x_in):
+        B, N, C = x_in.shape
+        x = x_in.to(torch.float32)
+        x_fft = torch.fft.rfft(x, dim=1, norm='ortho')
+        weight = torch.view_as_complex(self.complex_weight)
+        x_weighted = x_fft * weight
+
+        freq_mask = self.create_adaptive_high_freq_mask(x_fft)
+        x_masked = x_fft * freq_mask.to(x.device)
+
+        weight_high = torch.view_as_complex(self.complex_weight_high)
+        x_weighted2 = x_masked * weight_high
+        x_weighted += x_weighted2
+
+        x = torch.fft.irfft(x_weighted, n=N, dim=1, norm='ortho')
+        x = x.to(x_in.dtype).view(B, N, C)
+        return x
+
+
 class TimeAttentionCNNEncoder(nn.Module):
     def __init__(self, num_inputs, num_channels, embedding_dim, kernel_size, stride=2, padding=0, dropout=0.2,
                  normalization='none', num_heads=4, seq_len=100):
@@ -299,25 +342,30 @@ class TimeAttentionCNNEncoder(nn.Module):
         self.attention = nn.MultiheadAttention(embed_dim=embedding_dim, num_heads=num_heads, dropout=dropout)
         self.layer_norm = nn.LayerNorm(embedding_dim)
 
+        # Spectral Block for frequency attention
+        self.spectral_block = Adaptive_Spectral_Block(embedding_dim)
+
     def forward(self, x):
-        # Extract features with the CNN encoder
+        # CNN Encoder
         x = self.cnn_encoder(x)
-        
+
         # Reshape for attention
-        x = x.permute(2, 0, 1)
-        
+        x = x.permute(2, 0, 1)  # [seq_len, batch_size, embedding_dim]
+
         # Add positional encoding
         x = x + self.positional_encoding[:x.size(0), :]
 
-        # Apply attention to time steps
+        # Temporal Attention
         attn_output, _ = self.attention(x, x, x)
-
-        # Residual connection and normalization
         x = self.layer_norm(attn_output + x)
-        
-        # Reshape back to original dimensions
-        x = x.permute(1, 2, 0)
+
+        # Spectral Block for adaptive frequency attention
+        x = self.spectral_block(x)
+
+        # Reshape back
+        x = x.permute(1, 2, 0)  # [batch_size, embedding_dim, seq_len]
         return x
+
 
 class TimeAttentionCNNAE(MetaAE):
     def __init__(self, input_size, num_filters, embedding_dim, seq_len, kernel_size, dropout,
@@ -337,6 +385,11 @@ class TimeAttentionCNNAE(MetaAE):
         x = self.decoder(x)
         
         return x
+    
+    
+    
+    
+    
     
     
 ## Transformer Autoencoder

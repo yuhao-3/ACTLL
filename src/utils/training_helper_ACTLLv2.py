@@ -101,7 +101,11 @@ def add_to_confident_set_id(args=None,confident_set_id=None,train_dataset=None,e
         confnum_row['seed'] = args.seed
 
         conf_num.append(confnum_row)
-    estimate_noise_rate=TP_all/(TP_all+FP_all)
+    
+    if TP_all + FP_all == 0:
+        estimate_noise_rate=0
+    else:
+        estimate_noise_rate=TP_all/(TP_all+FP_all)
     return conf_num, estimate_noise_rate
 
 def save_model_and_sel_dict(model,args,sel_dict=None):
@@ -611,6 +615,54 @@ def warmup_ACTLL(data_loader, model, kmeans, loss_centroids, yhat_hist, optimize
     return loss_all, (avg_accuracy / global_step,0.), avg_loss / global_step, model, loss_centroids, yhat_hist
 
 
+# ########### CORRECT THE LESS CONFIDENT LABEL USING RESULT OF CLUSTERING OUTCOME###############
+# def label_correction(embedding, centers, y_pse, y_obs, yhat_hist, w_yhat, w_c, w_obs, classes):
+    
+    
+#     # yhat from previous metwork prediction. - Network Ensemble
+#     steps = yhat_hist.size(-1)
+#     decay = torch.arange(0, steps, 1).float().to(device)
+#     decay = torch.exp(-decay / 2)
+#     yhat_hist = yhat_hist * decay
+#     yhat = yhat_hist.mean(dim=-1) * w_yhat
+    
+
+#     # Label from clustering
+#     distance_centers = torch.cdist(embedding.squeeze(-1), centers)
+#     yc = F.softmin(distance_centers, dim=1).detach() * w_c
+
+#     # Observed - given - label (noisy)
+#     yobs = F.one_hot(y_obs, num_classes=classes).float() * w_obs
+    
+    
+    
+    
+    
+    
+#     # Label combining
+#     # Assign dynamic weights based on confidence
+#     confidence_yhat = torch.max(F.softmax(yhat_hist.mean(dim=-1), dim=1), dim=1)[0]
+#     confidence_yc = 1.0 / torch.min(distance_centers, dim=1)[0]  # Higher confidence for closer clusters
+#     confidence_yobs = torch.max(F.softmax(yobs, dim=1), dim=1)[0]
+#     confidence_ypse = torch.max(F.softmax(y_pse, dim=1), dim=1)[0]
+    
+#     # Normalize weights
+#     total_confidence = confidence_yhat + confidence_yc + confidence_yobs
+#     w_yhat = confidence_yhat / total_confidence
+#     w_c = confidence_yc / total_confidence
+#     w_obs = confidence_yobs / total_confidence
+#     w_pse = confidence_ypse / total_confidence
+    
+
+#     # Weighted combination of sources
+#     ystar = (w_yhat * yhat + w_c * yc + w_obs * yobs + w_pse *y_pse)
+#     ystar = torch.argmax(ystar, dim=1)
+    
+    
+#     return ystar
+
+
+
 ########### CORRECT THE LESS CONFIDENT LABEL USING RESULT OF CLUSTERING OUTCOME###############
 def label_correction(embedding, centers, y_obs, yhat_hist, w_yhat, w_c, w_obs, classes):
     
@@ -650,6 +702,48 @@ def label_correction(embedding, centers, y_obs, yhat_hist, w_yhat, w_c, w_obs, c
     
     return ystar
 
+
+
+
+
+
+
+def sharpen(p, T=0.5):
+    """
+    Apply temperature sharpening to reduce entropy in pseudo-labels.
+    """
+    return (p ** (1 / T)) / (p ** (1 / T)).sum(dim=-1, keepdim=True)
+
+def ensemble_k_augment(x, args, aug_type=['GNoise', 'Oversample', 'Convolve', 'Crop', 'Drift', 'TimeWarp'], K=6):
+    """
+    Apply K augmentations to the input using specified augmentation techniques.
+    """
+    aug_data = []
+    for aug in aug_type:
+        if aug == 'GNoise':
+            x_aug = torch.from_numpy(tsaug.AddNoise(scale=0.015).augment(x.cpu().numpy())).float().to(device)
+        elif aug == 'Oversample':
+            x_aug = x.detach().clone()
+        elif aug == 'Convolve':
+            x_aug = torch.from_numpy(tsaug.Convolve(window='flattop', size=10).augment(x.cpu().numpy())).float().to(device)
+        elif aug == 'Crop':
+            x_aug = torch.from_numpy(
+                tsaug.Crop(size=int(args.sample_len * (2 / 3)), resize=int(args.sample_len)).augment(x.cpu().numpy())
+            ).float().to(device)
+        elif aug == 'Drift':
+            x_aug = torch.from_numpy(
+                tsaug.Drift(max_drift=0.2, n_drift_points=5).augment(x.cpu().numpy())
+            ).float().to(device)
+        elif aug == 'TimeWarp':
+            x_aug = torch.from_numpy(
+                tsaug.TimeWarp(n_speed_change=5, max_speed_ratio=3).augment(x.cpu().numpy())
+            ).float().to(device)
+        else:
+            x_aug = x  # Default to no augmentation if not found
+        
+        aug_data.append(x_aug)
+    
+    return aug_data
 
 
 def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion, yhat_hist, bmm_models, loss_all=None, epoch=0, args=None, sel_dict=None, ):
@@ -746,27 +840,30 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
         alpha_, beta_, gamma_, epsilon_, rho_ = alpha, beta, gamma, epsilon, rho
 
 
+
         ################## L_CORR + DATA CORRECTION FOR LESS CONFIDENT EXAMPLES ##############
         if len(less_confident_idxs) > 0 and args.corr == True:
             w_yhat = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=0, high_val=1 * beta)  # Pred
             w_c = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=0, high_val=1 * gamma)  # Centers
             w_obs = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=1, high_val=0)  # Observed
             
-            # beta_ = temperature(epoch, th_low=init_centers - history_track, th_high=correct_start,
-            #                     low_val=0, high_val=beta)  # Class
-            # gamma_ = temperature(epoch, th_low=correct_start, th_high=correct_end, low_val=0,
-            #                         high_val=gamma)  # Centers
-            # rho_ = temperature(epoch, th_low=init_centers- correct_start, th_high=correct_end,
-            #                     low_val=0, high_val=rho * beta_)  # Lp
-            # epsilon_ = temperature(epoch, th_low=init_centers - correct_start, th_high=correct_end,
-            #                         low_val=0, high_val=epsilon * beta_)  # Le
             
+            # # Produce pseudo label
+            # aug_data_list = ensemble_k_augment(x[less_confident_idxs], args)
+            
+            # # Generate pseudo-labels for the less confident examples
+            # avg_pseudo_label = torch.stack(
+            #     [model.classifier(model.encoder(aug_x).squeeze(-1)) for aug_x in aug_data_list]
+            # ).mean(dim=0)
+            # sharpened_pseudo_label = sharpen(F.softmax(avg_pseudo_label, dim=1), T=0.5)
+
             
             
             # Clone y_hat before modification
+            # corrected_labels = label_correction(h, loss_centroids.centers, sharpened_pseudo_label, y_hat.clone(), yhat_hist[x_idx],
+            #                                    w_yhat, w_c, w_obs, classes)
             corrected_labels = label_correction(h, loss_centroids.centers, y_hat.clone(), yhat_hist[x_idx],
-                                               w_yhat, w_c, w_obs, classes)
-                   
+                                                w_yhat, w_c, w_obs, classes)     
             
             y_corrected = y_hat.clone()
             y_corrected[less_confident_idxs] = corrected_labels[less_confident_idxs]

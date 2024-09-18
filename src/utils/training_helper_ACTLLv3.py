@@ -18,7 +18,7 @@ from sklearn.metrics import accuracy_score, f1_score, classification_report, con
 from scipy.special import softmax
 
 from src.models.MultiTaskClassification import NonLinClassifier, MetaModel_AE
-from src.models.model import CNNAE, DiffusionAE, AttenDiffusionAE, TimeAttentionCNNAE, TransformerAE, InceptionTemporalAE
+from src.models.model import CNNAE, DiffusionAE, AttenDiffusionAE, TimeAttentionCNNAE, TransformerAE
 from src.utils.saver import Saver
 from src.utils.utils import readable, reset_seed_, reset_model, flip_label, remove_empty_dirs, \
     evaluate_class, to_one_hot,small_loss_criterion_EPS, select_class_by_class, FocalLoss, CentroidLoss, reduce_loss, cluster_accuracy, mixup_data
@@ -85,6 +85,8 @@ def add_to_confident_set_id(args=None,confident_set_id=None,train_dataset=None,e
     y_clean=y_clean.cpu().numpy()
     TP_all=0
     FP_all=0
+
+    
     for i in range(args.nbins):
         confnum_row = dict()
         confnum_row['epoch'] = epoch
@@ -101,7 +103,11 @@ def add_to_confident_set_id(args=None,confident_set_id=None,train_dataset=None,e
         confnum_row['seed'] = args.seed
 
         conf_num.append(confnum_row)
-    estimate_noise_rate=TP_all/(TP_all+FP_all)
+        
+    if (TP_all + FP_all == 0):
+        estimate_noise_rate = 0
+    else:
+        estimate_noise_rate=TP_all/(TP_all+FP_all)
     return conf_num, estimate_noise_rate
 
 def save_model_and_sel_dict(model,args,sel_dict=None):
@@ -256,12 +262,12 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
                                                                             loss_all=loss_all,
                                                                             args=args)
 
-            elif e<=100:
+            elif e<=50:
                 # Fit beta mixture models based on warmup loss(First)
                 # Fit n-classes 2-component BMM Models
                 bmm_models= fit_bmm_models(loss_all = loss_all, data_loader = train_loader, args = args, epoch = e)
                 
-                loss_all, train_accuracy, avg_loss, model_new, confident_set_id = train_step_ACTLLv2(
+                loss_all, train_accuracy, avg_loss, model_new, confident_set_id, less_conf_id = train_step_ACTLLv3(
                     data_loader=train_loader,
                     model=model,
                     loss_centroids = loss_centroids,
@@ -279,13 +285,14 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
                                                        train_dataset=train_dataset, epoch=e,
                                                        conf_num=conf_num)
                     
-            elif e<=200:
-                
-                
-                
             else:
-                
+                # Confident example as labelled examples, 
+                # less confident exampleas unlabelled examples
                     
+                loss_all, train_accuracy, avg_loss, model_new = train_mixmatch_with_given_splits(loss_all, train_loader, model, confident_set_id, less_conf_id, optimizer, 
+                                                                criterion, yhat_hist, e, args, 
+                                                                aug_type=['GNoise', 'Oversample', 'Convolve', 'Crop', 'Drift', 'TimeWarp'], 
+                                                                T=0.5, K=2, alpha=0.75)
                     
             model = model_new 
 
@@ -383,7 +390,7 @@ def train_eval_model(model, x_train, x_test, Y_train, Y_test, Y_train_clean,
     return test_results
 
 
-def main_wrapper_ACTLLv2(args, x_train, x_test, Y_train_clean, Y_test_clean, saver,seed=None):
+def main_wrapper_ACTLLv3(args, x_train, x_test, Y_train_clean, Y_test_clean, saver,seed=None):
     class SaverSlave(Saver):
         def __init__(self, path):
             super(Saver)
@@ -503,6 +510,8 @@ def main_wrapper_ACTLLv2(args, x_train, x_test, Y_train_clean, Y_test_clean, sav
     remove_empty_dirs(saver.path)
 
     return test_results
+
+
 
 
 def plot_train_loss_and_test_acc(avg_train_losses,test_acc_list,args,pred_precision=None,saver=None,save=False,aug_accs=None):
@@ -659,7 +668,7 @@ def label_correction(embedding, centers, y_obs, yhat_hist, w_yhat, w_c, w_obs, c
 
 
 
-def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion, yhat_hist, bmm_models, loss_all=None, epoch=0, args=None, sel_dict=None, ):
+def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion, yhat_hist, bmm_models, loss_all=None, epoch=0, args=None, sel_dict=None, ):
     
     global_step = 0
     aug_step = 0
@@ -668,6 +677,7 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
     avg_loss = 0.
     model = model.train()
     confident_set_id = np.array([])
+    less_confident_set_id = np.array([]) 
     classes = args.nbins
     
     alpha, beta, gamma = args.abg
@@ -679,9 +689,6 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
     correct_start = args.correct_start
     correct_end = args.correct_end
     history_track = args.track
-    
-    
-    
     
     
     for batch_idx, (x, y_hat, x_idx, _) in enumerate(data_loader):
@@ -709,16 +716,6 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
             
 
         ################# L_CONF ######################
-        # Use fitted BMM Model after each epoch   
-        
-        # inputs, targets_a, targets_b, lam = mixup_data(x, y_hat, 1.0, device)
-        # output = F.log_softmax(out, dim=1)
-
-        # def mixup_criterion(pred, y_a, y_b, lam):
-        #     return lam * F.nll_loss(pred, y_a, reduction='none') + (1 - lam) * F.nll_loss(pred, y_b, reduction='none')
-        
-        # loss = mixup_criterion(output, targets_a, targets_b, lam)
-        
     
         L_conf, model_sel_idx, less_confident_idxs = select_sample_from_BMM(loss, loss_all, bmm_models, args, x_idx, epoch, y_hat)
           
@@ -791,17 +788,14 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
         L_p = -torch.sum(torch.log(prob_avg) * p)  # Distribution regularization
         L_e = -torch.mean(torch.sum(prob * F.log_softmax(out, dim=1), dim=1))  # Entropy regularization
         
-        # New Update Loss Function + Correction Loss
-        # model_loss = L_conf + args.L_aug_coef * aug_model_loss + args.L_rec_coef * recon_loss + 1 * clustering_loss + 1* L_corr + 1*L_p + 1* L_e
-    
-
+        
         # Clamping to avoid extreme values
         recon_loss = torch.clamp(recon_loss, min=1e-8, max=1e8)
         clustering_loss = torch.clamp(clustering_loss, min=1e-8, max=1e8)
 
 
         model_loss = L_conf + args.L_aug_coef * aug_model_loss + args.L_rec_coef * recon_loss + \
-             gamma_ * clustering_loss + 100 * L_corr + rho_ * L_p + epsilon_ * L_e
+             gamma_ * clustering_loss + 1 * L_corr + rho_ * L_p + epsilon_ * L_e
     
         # Loss exchange
         optimizer.zero_grad()
@@ -817,17 +811,215 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
         avg_accuracy += acc1.sum().cpu().numpy()
 
         global_step += 1
+        
+        # print("len of index after training steps")
+        # print(len(confident_set_id))
+        # print(len(less_confident_idxs))
+        
+        
 
         confident_set_id = np.concatenate((confident_set_id, x_idx[model_sel_idx].cpu().numpy()))
-
+        less_confident_set_id = np.concatenate((less_confident_set_id, x_idx[less_confident_idxs].cpu().numpy()))
+        
         yhat_hist[x_idx] = yhat_hist[x_idx].roll(1, dims=-1)  # Roll the elements along the last dimension
         yhat_hist[x_idx, :, 0] = prob.detach()  # Assign the probability to the first position
         
         
+        
+        
+    # print("len of index after training steps")
+    # print(len(confident_set_id))
+    # print(len(less_confident_set_id))
 
-    return loss_all, (avg_accuracy / global_step, avg_accuracy_aug / aug_step), avg_loss / global_step, model, confident_set_id
+    return loss_all, (avg_accuracy / global_step, avg_accuracy_aug / aug_step), avg_loss / global_step, model, confident_set_id, less_confident_set_id
 
 
 
 
 
+def brier_score_loss(preds, targets, num_classes):
+    # Convert targets to one-hot encoding
+    targets_one_hot = F.one_hot(targets, num_classes=num_classes).float()
+
+    # Compute the Brier score as the mean squared error
+    brier_loss = torch.mean((preds - targets_one_hot) ** 2)
+    return brier_loss
+
+
+def sharpen(p, T=0.5):
+    """
+    Apply temperature sharpening to reduce entropy in pseudo-labels.
+    """
+    return (p ** (1 / T)) / (p ** (1 / T)).sum(dim=-1, keepdim=True)
+
+def ensemble_k_augment(x, args, aug_type=['GNoise', 'Oversample', 'Convolve', 'Crop', 'Drift', 'TimeWarp'], K=6):
+    """
+    Apply K augmentations to the input using specified augmentation techniques.
+    """
+    aug_data = []
+    for aug in aug_type:
+        if aug == 'GNoise':
+            x_aug = torch.from_numpy(tsaug.AddNoise(scale=0.015).augment(x.cpu().numpy())).float().to(device)
+        elif aug == 'Oversample':
+            x_aug = x.detach().clone()
+        elif aug == 'Convolve':
+            x_aug = torch.from_numpy(tsaug.Convolve(window='flattop', size=10).augment(x.cpu().numpy())).float().to(device)
+        elif aug == 'Crop':
+            x_aug = torch.from_numpy(
+                tsaug.Crop(size=int(args.sample_len * (2 / 3)), resize=int(args.sample_len)).augment(x.cpu().numpy())
+            ).float().to(device)
+        elif aug == 'Drift':
+            x_aug = torch.from_numpy(
+                tsaug.Drift(max_drift=0.2, n_drift_points=5).augment(x.cpu().numpy())
+            ).float().to(device)
+        elif aug == 'TimeWarp':
+            x_aug = torch.from_numpy(
+                tsaug.TimeWarp(n_speed_change=5, max_speed_ratio=3).augment(x.cpu().numpy())
+            ).float().to(device)
+        else:
+            x_aug = x  # Default to no augmentation if not found
+        
+        aug_data.append(x_aug)
+    
+    return aug_data
+
+def apply_mixup(x1, x2, p1, p2, alpha=0.75):
+    """
+    Apply MixUp to two datasets with labels.
+    """
+    lam = np.random.beta(alpha, alpha)
+    lam = max(lam, 1 - lam)
+    x_mix = lam * x1 + (1 - lam) * x2
+    p_mix = lam * p1 + (1 - lam) * p2
+    return x_mix, p_mix
+
+def train_mixmatch_with_given_splits(loss_all, train_loader, model, conf_id, less_conf_id, optimizer, 
+                                     criterion, yhat_hist, e, args, 
+                                     aug_type=['GNoise', 'Oversample', 'Convolve', 'Crop', 'Drift', 'TimeWarp'], 
+                                     T=0.5, K=2, alpha=0.75):
+    """
+    Main MixMatch training function with provided splits of confident, less confident, and other examples.
+    1. Apply K augmentations to less confident set.
+    2. Generate pseudo-labels by averaging augmentations and sharpening.
+    3. Combine confident, pseudo-labeled, and other datasets, apply MixUp, and calculate losses.
+    """
+
+    avg_loss = 0.
+    total_correct_conf = 0
+    total_samples_conf = 0
+    total_correct_less_conf = 0
+    total_samples_less_conf = 0
+    total_correct_other = 0
+    total_samples_other = 0
+
+    
+    for batch_idx, (x, y_hat, x_idx, _) in enumerate(train_loader):
+        
+        x, y_hat = x.to(device), y_hat.to(device)
+        
+        
+        # Find the indices of confident, less confident, and other examples in the current batch
+        conf_mask = np.isin(x_idx.cpu().numpy(), conf_id)
+        less_conf_mask = np.isin(x_idx.cpu().numpy(), less_conf_id)
+        other_mask = ~(conf_mask | less_conf_mask)  # These are the examples not in confident or less confident sets
+
+        conf_in_batch_idx = np.where(conf_mask)[0]
+        less_conf_in_batch_idx = np.where(less_conf_mask)[0]
+        other_in_batch_idx = np.where(other_mask)[0]
+
+        # Step 1: Apply K augmentations to the less confident examples
+        if len(less_conf_in_batch_idx) > 0:
+            aug_data_list = ensemble_k_augment(x[less_conf_in_batch_idx], args, aug_type=aug_type, K=K)
+            
+            # Generate pseudo-labels for the less confident examples
+            avg_pseudo_label = torch.stack(
+                [model.classifier(model.encoder(aug_x).squeeze(-1)) for aug_x in aug_data_list]
+            ).mean(dim=0)
+            sharpened_pseudo_label = sharpen(F.softmax(avg_pseudo_label, dim=1), T=T)
+
+        # Step 2: MixUp between confident and pseudo-labeled datasets
+        if len(conf_in_batch_idx) > 0 and len(less_conf_in_batch_idx) > 0:
+            conf_x = x[conf_in_batch_idx].to(device)
+            conf_y = y_hat[conf_in_batch_idx].to(device)
+            
+            pseudo_x = x[less_conf_in_batch_idx].to(device)
+            pseudo_y = sharpened_pseudo_label.argmax(dim=1).to(device)
+
+
+            # Combine datasets
+            combined_x = torch.cat((conf_x, pseudo_x), dim=0)
+            combined_y = torch.cat((conf_y, pseudo_y), dim=0)
+
+            # Shuffle the combined dataset
+            perm = torch.randperm(combined_x.size(0)).to(device)
+            shuffled_x = combined_x[perm]
+            shuffled_y = combined_y[perm]
+            
+            # Apply MixUp between shuffled datasets
+            X_mix_x, X_mix_y = apply_mixup(conf_x, shuffled_x[:len(conf_x)], conf_y, shuffled_y[:len(conf_y)], alpha=alpha)
+            
+            # Apply MixUp between confident and pseudo-labeled datasets
+            U_mix_x, U_mix_y = apply_mixup(pseudo_x, shuffled_x[len(conf_x):], pseudo_y, shuffled_y[len(conf_y):], alpha=alpha)
+
+            # Forward pass for mixed dataset
+            X_mix_h = model.encoder(X_mix_x)
+            X_mix_out = model.classifier(X_mix_h.squeeze(-1))
+            
+            U_mix_h = model.encoder(U_mix_x)
+            U_mix_out = model.classifier(U_mix_h.squeeze(-1))
+
+            # Calculate MixUp loss
+            x_loss = criterion(X_mix_out, X_mix_y.long())
+            u_loss = brier_score_loss(F.softmax(U_mix_out, dim=1), U_mix_y.long(), num_classes=args.nbins)
+            
+            
+            mix_loss = x_loss + 100 * u_loss
+        else:
+            mix_loss = torch.tensor(0.0, device=device, dtype=torch.float, requires_grad=True)
+
+
+        # Step 4: Forward pass for other examples not in confident or less confident sets
+        if len(other_in_batch_idx) > 0:
+            other_x, other_y = x[other_in_batch_idx].to(device), y_hat[other_in_batch_idx].to(device)
+            other_out = model.classifier(model.encoder(other_x).squeeze(-1))
+
+            # Calculate loss for other examples
+            other_loss = criterion(other_out, other_y)
+
+            # Accuracy for other samples
+            pred_other = torch.argmax(other_out, dim=1)
+            total_correct_other += (pred_other == other_y).sum().item()
+            total_samples_other += other_y.size(0)
+        else:
+            other_loss = torch.tensor(0.0, device=device, dtype=torch.float, requires_grad=True)
+
+
+        # Combine losses for confident, pseudo-labeled, and other examples
+        total_loss =  mix_loss.mean() + other_loss.mean()
+        # total_loss = total_loss.mean()
+
+        # Accumulate total loss
+        avg_loss += total_loss
+
+        # Backpropagation
+        optimizer.zero_grad()
+         
+        total_loss.backward()
+        optimizer.step()
+
+        if loss_all is not None:
+            loss_all[x_idx, e] = total_loss.data.detach().clone().cpu().numpy()
+
+    # Compute average loss
+    avg_loss /= len(train_loader)
+
+    # Step 5: Calculate overall accuracy for the entire epoch
+    total_correct = total_correct_conf + total_correct_less_conf + total_correct_other
+    total_samples = total_samples_conf + total_samples_less_conf + total_samples_other
+    avg_accuracy = total_correct / total_samples if total_samples > 0 else 0
+
+
+
+    # avg_accuracy = avg_accuracy.cpu().numpy()
+    
+    return loss_all, (avg_accuracy,avg_accuracy), avg_loss, model
