@@ -15,8 +15,17 @@
 
 # Run the Python script
 
-chmod +x run_ablation_BMM.sh
-./run_ablation_BMM.sh
+# chmod +x run_ablation_BMM.sh
+# ./run_ablation_BMM.sh
+
+
+python src/BMM_single_experiment.py \
+    --dataset MIMIC \
+    --outfile MixUp_BMM \
+    --ni 0.1 \
+    --label_noise 0 \
+    --epoch 100 \
+    --lr 1e-3 \
 
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##

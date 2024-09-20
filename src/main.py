@@ -35,6 +35,7 @@ from src.utils.training_helper_dividemix import main_wrapper_dividemix
 from src.ucr_data.load_ucr_pre import load_ucr
 from src.uea_data.load_uea_pre import load_uea
 from src.utils.load_MIMIC import prepare_dataloader
+from src.utils.load_eICU import prepare_eICU
 
 warnings.filterwarnings("ignore")
 torch.backends.cudnn.benchmark = True
@@ -167,10 +168,20 @@ def parse_args():
     parser.add_argument('--aug_ae', action='store_true', default=False, help='if reconstruct augmented samples or not')
     parser.add_argument('--window', type=str, choices=['single', 'all'], default='all',
                         help='single_train/single_test: only plot training/test data; all: plot all data ')
-    parser.add_argument('--L_aug_coef', type=float, default=1.,
+    parser.add_argument('--L_aug_coef', type=float, default=10.,
                         help='the coefficient of L_aug')
     parser.add_argument('--L_rec_coef', type=float, default=1.,
                         help='the coefficient of L_rec')
+    parser.add_argument('--L_cls_coef', type=float, default=1,
+                        help='the coefficient of L_clus')
+    parser.add_argument('--L_cor_coef', type=float, default=100,
+                        help='the coefficient of L_corr')
+    parser.add_argument('--L_p_coef', type=float, default=1,
+                        help='the coefficient of L_p')
+    parser.add_argument('--L_e_coef', type=float, default=1,
+                        help='the coefficient of L_e')
+    
+    
     parser.add_argument('--confcsv', type=str, default="",
                         help='the file of saving conf_num')
     parser.add_argument('--whole_data_select', action='store_true', default=False,
@@ -248,6 +259,9 @@ def main(args, dataset_name=None):
         X, Y = load_uea(args.dataset)
     elif args.dataset == 'MIMIC':
         X,Y = prepare_dataloader(args.deleteMIMIC)  
+        
+    elif args.dataset == 'eICU':
+        X,Y = prepare_eICU()
     else:
         X, Y = load_ucr(args.dataset)
     classes = len(np.unique(Y))
@@ -355,9 +369,14 @@ if __name__ == '__main__':
     if args.ucr==128:
         ucr=datasets.ucr_dataset_list()[args.from_ucr:args.end_ucr]
     else:
+        # ucr=['eICU','MIMIC','ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
+        #       'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
+        
         ucr=['MIMIC','ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
               'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
-        
+    
+        # ucr = ['eICU']
+        # ucr = ['ArrowHead']
         # ucr = ['MIMIC']
         # ucr = ['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
         #        'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']

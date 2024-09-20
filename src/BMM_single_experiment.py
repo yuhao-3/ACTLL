@@ -23,6 +23,7 @@ from src.ucr_data.load_ucr_pre import load_ucr
 from src.uea_data.load_uea_pre import load_uea 
 from src.utils.log_utils import StreamToLogger,get_logger,create_logfile
 from src.utils.load_MIMIC import prepare_dataloader
+from src.utils.load_eICU import prepare_eICU
 
 warnings.filterwarnings("ignore")
 torch.backends.cudnn.benchmark = True
@@ -149,6 +150,8 @@ def main(args, dataset_name=None):
         X, Y = load_uea(args.dataset)
     elif args.dataset == 'MIMIC':
         X, Y = prepare_dataloader(args.deleteMIMIC)
+    elif args.dataset == 'eICU':
+        X,Y = prepare_eICU()
     else:
         print(args.dataset)
         X, Y = load_ucr(args.dataset)
@@ -255,26 +258,28 @@ if __name__ == '__main__':
         #      'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
         # ucr = ['FaceDetection', 'FingerMovements']
         
+        
         # ucr = ['MIMIC']
-        ucr =  [
-            # UCR Datasets
-            "NonInvasiveFetalECGThorax1",
-            "HandOutlines",
-            "StarLightCurves",
-            "PhalangesOutlinesCorrect",
-            "ECG5000",
-            "FordA",
-            "FordB",
+        ucr = ['eICU']
+        # ucr =  [
+        #     # UCR Datasets
+        #     "NonInvasiveFetalECGThorax1",
+        #     "HandOutlines",
+        #     "StarLightCurves",
+        #     "PhalangesOutlinesCorrect",
+        #     "ECG5000",
+        #     "FordA",
+        #     "FordB",
             
-            # UEA Datasets
-            "BasicMotions",
-            "Cricket",
-            "Handwriting",
-            "InsectWingbeatSound",
-            "JapaneseVowels",
-            "PenDigits",
-            "PEMS-SF"
-        ]
+        #     # UEA Datasets
+        #     "BasicMotions",
+        #     "Cricket",
+        #     "Handwriting",
+        #     "InsectWingbeatSound",
+        #     "JapaneseVowels",
+        #     "PenDigits",
+        #     "PEMS-SF"
+        # ]
 
     for dataset_name in ucr:
         args = parse_args()

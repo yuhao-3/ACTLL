@@ -327,44 +327,88 @@ class Adaptive_Spectral_Block(nn.Module):
         return x
 
 
+
+
+
+
+
+
+
+## Time attention CNN encoder for Time Series
 class TimeAttentionCNNEncoder(nn.Module):
     def __init__(self, num_inputs, num_channels, embedding_dim, kernel_size, stride=2, padding=0, dropout=0.2,
-                 normalization='none', num_heads=4, seq_len=100):
+                 normalization='none', num_heads=4):
         super(TimeAttentionCNNEncoder, self).__init__()
-
+        
         # CNN-based feature extraction
         self.cnn_encoder = ConvEncoder(num_inputs, num_channels, embedding_dim, kernel_size, stride, padding, dropout, normalization)
-
-        # Positional encoding
-        self.positional_encoding = nn.Parameter(torch.zeros(seq_len, embedding_dim))
-
+        
         # Multi-head self-attention for temporal attention
         self.attention = nn.MultiheadAttention(embed_dim=embedding_dim, num_heads=num_heads, dropout=dropout)
         self.layer_norm = nn.LayerNorm(embedding_dim)
-
-        # Spectral Block for frequency attention
-        self.spectral_block = Adaptive_Spectral_Block(embedding_dim)
-
+        
     def forward(self, x):
-        # CNN Encoder
+        # Extract features with the CNN encoder
         x = self.cnn_encoder(x)
-
-        # Reshape for attention
-        x = x.permute(2, 0, 1)  # [seq_len, batch_size, embedding_dim]
-
-        # Add positional encoding
-        x = x + self.positional_encoding[:x.size(0), :]
-
-        # Temporal Attention
+        
+        # Reshape the data for attention: [batch_size, embedding_dim, seq_len] -> [seq_len, batch_size, embedding_dim]
+        x = x.permute(2, 0, 1)
+        
+        # Apply attention to time steps
         attn_output, _ = self.attention(x, x, x)
+        
+        # Residual connection and normalization
         x = self.layer_norm(attn_output + x)
-
-        # Spectral Block for adaptive frequency attention
-        x = self.spectral_block(x)
-
-        # Reshape back
-        x = x.permute(1, 2, 0)  # [batch_size, embedding_dim, seq_len]
+        
+        # Reshape back to original dimensions: [seq_len, batch_size, embedding_dim] -> [batch_size, embedding_dim, seq_len]
+        x = x.permute(1, 2, 0)
+        
         return x
+
+
+
+
+
+
+
+# class TimeAttentionCNNEncoder(nn.Module):
+#     def __init__(self, num_inputs, num_channels, embedding_dim, kernel_size, stride=2, padding=0, dropout=0.2,
+#                  normalization='none', num_heads=4, seq_len=100):
+#         super(TimeAttentionCNNEncoder, self).__init__()
+
+#         # CNN-based feature extraction
+#         self.cnn_encoder = ConvEncoder(num_inputs, num_channels, embedding_dim, kernel_size, stride, padding, dropout, normalization)
+
+#         # Positional encoding
+#         self.positional_encoding = nn.Parameter(torch.zeros(seq_len, embedding_dim))
+
+#         # Multi-head self-attention for temporal attention
+#         self.attention = nn.MultiheadAttention(embed_dim=embedding_dim, num_heads=num_heads, dropout=dropout)
+#         self.layer_norm = nn.LayerNorm(embedding_dim)
+
+#         # Spectral Block for frequency attention
+#         self.spectral_block = Adaptive_Spectral_Block(embedding_dim)
+
+#     def forward(self, x):
+#         # CNN Encoder
+#         x = self.cnn_encoder(x)
+
+#         # Reshape for attention
+#         x = x.permute(2, 0, 1)  # [seq_len, batch_size, embedding_dim]
+
+#         # Add positional encoding
+#         x = x + self.positional_encoding[:x.size(0), :]
+
+#         # Temporal Attention
+#         attn_output, _ = self.attention(x, x, x)
+#         x = self.layer_norm(attn_output + x)
+
+#         # Spectral Block for adaptive frequency attention
+#         x = self.spectral_block(x)
+
+#         # Reshape back
+#         x = x.permute(1, 2, 0)  # [batch_size, embedding_dim, seq_len]
+#         return x
 
 
 class TimeAttentionCNNAE(MetaAE):

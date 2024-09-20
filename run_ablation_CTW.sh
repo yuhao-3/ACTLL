@@ -6,43 +6,43 @@
 # --label_noise -1: instance-depended noise
 
 ############ Symmetric NOISE #############
-# nohup python src/main.py \
-#     --dataset MIMIC \
-#     --outfile CTW \
-#     --ni 0.1 \
-#     --label_noise 0 \
-#     --model CTW\
-#     --epochs 300 \
-#     --lr 1e-3 \
+nohup python src/main.py \
+    --dataset MIMIC \
+    --outfile CTW \
+    --ni 0.1 \
+    --label_noise 0 \
+    --model CTW\
+    --epochs 300 \
+    --lr 1e-3 \
 
-# nohup python src/main.py \
-#     --dataset MIMIC \
-#     --outfile CTW \
-#     --ni 0.2 \
-#     --label_noise 0 \
-#     --model CTW\
-#     --epochs 300 \
-#     --lr 1e-3 \
-
-
-# nohup python src/main.py \
-#     --dataset MIMIC \
-#     --outfile CTW \
-#     --ni 0.3 \
-#     --label_noise 0 \
-#     --model CTW\
-#     --epochs 300 \
-#     --lr 1e-3 \
+nohup python src/main.py \
+    --dataset MIMIC \
+    --outfile CTW \
+    --ni 0.2 \
+    --label_noise 0 \
+    --model CTW\
+    --epochs 300 \
+    --lr 1e-3 \
 
 
-# nohup python src/main.py \
-#     --dataset MIMIC \
-#     --outfile CTW\
-#     --ni 0.4 \
-#     --label_noise 0 \
-#     --model CTW \
-#     --epochs 300 \
-#     --lr 1e-3 \
+nohup python src/main.py \
+    --dataset MIMIC \
+    --outfile CTW \
+    --ni 0.3 \
+    --label_noise 0 \
+    --model CTW\
+    --epochs 300 \
+    --lr 1e-3 \
+
+
+nohup python src/main.py \
+    --dataset MIMIC \
+    --outfile CTW\
+    --ni 0.4 \
+    --label_noise 0 \
+    --model CTW \
+    --epochs 300 \
+    --lr 1e-3 \
 
 
 nohup python src/main.py \

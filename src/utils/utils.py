@@ -1349,10 +1349,10 @@ def select_sample_from_BMM(model_loss, loss_all, bmm_models, args, x_idxs, epoch
                             
             # Add confident index
             clean_labels += [clean_idx for clean_idx in range(len(cls_index)) if
-                                model_loss[clean_idx] < mean_clean]
+                                loss_mean[clean_idx] <= mean_clean]
             
             # Add less confident index
-            less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if model_loss[noisy_idx] > mean_noisy]
+            less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if loss_mean[noisy_idx] >= mean_noisy]
 
             less_confident_idx = torch.tensor(less_confident_labels).long()
             model_sm_idx = torch.tensor(clean_labels).long()

@@ -106,6 +106,11 @@ def add_to_confident_set_id(args=None,confident_set_id=None,train_dataset=None,e
         estimate_noise_rate=0
     else:
         estimate_noise_rate=TP_all/(TP_all+FP_all)
+        
+        
+    print(f"TP_all{TP_all}")
+    print(f"FP_all{FP_all}")
+    print(f"Estimated Noise Rate {estimate_noise_rate}")
     return conf_num, estimate_noise_rate
 
 def save_model_and_sel_dict(model,args,sel_dict=None):
@@ -664,27 +669,24 @@ def warmup_ACTLL(data_loader, model, kmeans, loss_centroids, yhat_hist, optimize
 
 
 ########### CORRECT THE LESS CONFIDENT LABEL USING RESULT OF CLUSTERING OUTCOME###############
+########### CORRECT THE LESS CONFIDENT LABEL USING RESULT OF CLUSTERING OUTCOME###############
 def label_correction(embedding, centers, y_obs, yhat_hist, w_yhat, w_c, w_obs, classes):
     
-    
-    # yhat from previous metwork prediction. - Network Ensemble
+    # yhat from previous network prediction - Network Ensemble
     steps = yhat_hist.size(-1)
     decay = torch.arange(0, steps, 1).float().to(device)
     decay = torch.exp(-decay / 2)
     yhat_hist = yhat_hist * decay
     yhat = yhat_hist.mean(dim=-1) * w_yhat
-    
 
     # Label from clustering
     distance_centers = torch.cdist(embedding.squeeze(-1), centers)
     yc = F.softmin(distance_centers, dim=1).detach() * w_c
 
-    # Observed - given - label (noisy)
+    # Observed (noisy) label
     yobs = F.one_hot(y_obs, num_classes=classes).float() * w_obs
-    
-    
-    # Label combining
-    # Assign dynamic weights based on confidence
+
+    # Compute confidence for each source
     confidence_yhat = torch.max(F.softmax(yhat_hist.mean(dim=-1), dim=1), dim=1)[0]
     confidence_yc = 1.0 / torch.min(distance_centers, dim=1)[0]  # Higher confidence for closer clusters
     confidence_yobs = torch.max(F.softmax(yobs, dim=1), dim=1)[0]
@@ -695,10 +697,27 @@ def label_correction(embedding, centers, y_obs, yhat_hist, w_yhat, w_c, w_obs, c
     w_c = confidence_yc / total_confidence
     w_obs = confidence_yobs / total_confidence
 
-    # Weighted combination of sources
+    # Add an extra dimension to w_yhat, w_c, and w_obs to match the shape of yhat, yc, yobs
+    w_yhat = w_yhat.unsqueeze(1)  # Shape becomes [16, 1]
+    w_c = w_c.unsqueeze(1)        # Shape becomes [16, 1]
+    w_obs = w_obs.unsqueeze(1)    # Shape becomes [16, 1]
+
+    # Now perform the weighted combination
     ystar = (w_yhat * yhat + w_c * yc + w_obs * yobs)
+    
     ystar = torch.argmax(ystar, dim=1)
     
+    
+
+    # Print out comparison of each component
+    print("Original noisy label (y_obs):", y_obs)
+    print("Prediction from network (yhat):", torch.argmax(yhat, dim=1))
+    print("Label from clustering (yc):", torch.argmax(yc, dim=1))
+    print("Corrected label (ystar):", ystar)
+    
+    # Print confidence values
+    print("Confidence from yhat:", confidence_yhat)
+    print("Confidence from yobs (observed):", confidence_yobs)
     
     return ystar
 
@@ -767,7 +786,8 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
     correct_end = args.correct_end
     history_track = args.track
     
-    
+    total_conf_samples = 0
+    total_less_conf_samples = 0
     
     
     
@@ -810,13 +830,27 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
         L_conf, model_sel_idx, less_confident_idxs = select_sample_from_BMM(loss, loss_all, bmm_models, args, x_idx, epoch, y_hat)
           
         
+        
+        # Debugging: Track number of confident and less confident samples
+        conf_num = len(model_sel_idx)
+        less_conf_num = len(less_confident_idxs)
+        total_conf_samples += conf_num
+        total_less_conf_samples += less_conf_num
+        
+        # Debugging: Print stats after each batch
+        print(f"Batch {batch_idx + 1} | Confident samples: {conf_num} | Less confident samples: {less_conf_num}")
+        
+        
+        
         # ################# L_AUG #######################
         # Data Augmentation after selecting clean samples
-        if (batch_idx % args.arg_interval == 0) and len(model_sel_idx) != 1 and args.augment == True:
+        if (batch_idx % args.arg_interval == 0) and (len(model_sel_idx) != 1) and (args.augment):
+            
             x_aug = torch.from_numpy(
                 tsaug.TimeWarp(n_speed_change=5, max_speed_ratio=3).augment(
                     x[model_sel_idx].cpu().numpy())).float().to(device)
             aug_step += 1
+            
             if len(x_aug) == 1:  # Avoid bugs
                 aug_model_loss = torch.tensor(0.)
                 avg_accuracy_aug = 0.
@@ -824,7 +858,13 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
                 aug_h = model.encoder(x_aug)
                 outx_aug = model.classifier(aug_h.squeeze(-1))
                 y_hat_aug = y_hat[model_sel_idx]
-                aug_model_loss = criterion(outx_aug, y_hat_aug).sum()
+                aug_model_loss = criterion(outx_aug, y_hat_aug).mean()
+                
+                
+                if torch.isnan(aug_model_loss).any():
+                    print(x_aug)
+                    print(y_hat_aug)
+                    print("Loss contains NaN!")
                 avg_accuracy_aug += torch.eq(torch.argmax(outx_aug, 1), y_hat_aug).float().sum().cpu().numpy()
 
             if epoch == args.epochs - 1 or epoch in args.tsne_epochs:
@@ -837,12 +877,17 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
             
             
             
+            
         alpha_, beta_, gamma_, epsilon_, rho_ = alpha, beta, gamma, epsilon, rho
 
 
 
         ################## L_CORR + DATA CORRECTION FOR LESS CONFIDENT EXAMPLES ##############
-        if len(less_confident_idxs) > 0 and args.corr == True:
+        
+        if (len(less_confident_idxs) > 0) and args.corr:
+            
+            
+            
             w_yhat = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=0, high_val=1 * beta)  # Pred
             w_c = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=0, high_val=1 * gamma)  # Centers
             w_obs = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=1, high_val=0)  # Observed
@@ -862,6 +907,9 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
             # Clone y_hat before modification
             # corrected_labels = label_correction(h, loss_centroids.centers, sharpened_pseudo_label, y_hat.clone(), yhat_hist[x_idx],
             #                                    w_yhat, w_c, w_obs, classes)
+            
+        
+            
             corrected_labels = label_correction(h, loss_centroids.centers, y_hat.clone(), yhat_hist[x_idx],
                                                 w_yhat, w_c, w_obs, classes)     
             
@@ -873,6 +921,7 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
         
         
         else:
+            
             L_corr = 0
         
         # Calculating Clustering Module Loss
@@ -890,15 +939,34 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
         clustering_loss = torch.clamp(clustering_loss, min=1e-8, max=1e8)
 
 
+
+
+
         model_loss = L_conf + args.L_aug_coef * aug_model_loss + args.L_rec_coef * recon_loss + \
-             1 * clustering_loss + 1 * L_corr + 1 * L_p + 1* L_e
+             args.L_cls_coef * clustering_loss + args.L_cor_coef * L_corr + args.L_p_coef * L_p + args.L_e_coef* L_e
     
+        
         # Loss exchange
         optimizer.zero_grad()
         
         model_loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
         optimizer.step()
+
+
+        L_corr = torch.tensor(L_corr, dtype=torch.float32).to(device) if isinstance(L_corr, int) else L_corr
+        clustering_loss = torch.tensor(clustering_loss, dtype=torch.float32).to(device) if isinstance(clustering_loss, int) else clustering_loss
+        L_p = torch.tensor(L_p, dtype=torch.float32).to(device) if isinstance(L_p, int) else L_p
+        L_e = torch.tensor(L_e, dtype=torch.float32).to(device) if isinstance(L_e, int) else L_e
+
+
+
+
+        print(f"Batch {batch_idx + 1} | L_conf: {L_conf.item():.4f} | L_aug: {aug_model_loss.item():.4f} | L_rec: {recon_loss.item():.4f}")
+        print(f"L_corr: {L_corr.item():.4f} | L_cls: {clustering_loss.item():.4f} | L_p: {L_p.item():.4f} | L_e: {L_e.item():.4f}")
+
+        print(f"model_loss {model_loss.item():.4f}")
+
 
         avg_loss += model_loss.item()
 
@@ -913,6 +981,9 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
         yhat_hist[x_idx] = yhat_hist[x_idx].roll(1, dims=-1)  # Roll the elements along the last dimension
         yhat_hist[x_idx, :, 0] = prob.detach()  # Assign the probability to the first position
         
+    
+    
+    print(f"Epoch {epoch}: Avg Loss = {avg_loss / global_step:.4f} | Total Confident Samples = {total_conf_samples} | Total Less Confident Samples = {total_less_conf_samples}")
         
 
     return loss_all, (avg_accuracy / global_step, avg_accuracy_aug / aug_step), avg_loss / global_step, model, confident_set_id
