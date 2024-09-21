@@ -168,17 +168,17 @@ def parse_args():
     parser.add_argument('--aug_ae', action='store_true', default=False, help='if reconstruct augmented samples or not')
     parser.add_argument('--window', type=str, choices=['single', 'all'], default='all',
                         help='single_train/single_test: only plot training/test data; all: plot all data ')
-    parser.add_argument('--L_aug_coef', type=float, default=10.,
+    parser.add_argument('--L_aug_coef', type=float, default=1.,
                         help='the coefficient of L_aug')
     parser.add_argument('--L_rec_coef', type=float, default=1.,
                         help='the coefficient of L_rec')
     parser.add_argument('--L_cls_coef', type=float, default=1,
                         help='the coefficient of L_clus')
-    parser.add_argument('--L_cor_coef', type=float, default=100,
+    parser.add_argument('--L_cor_coef', type=float, default=1,
                         help='the coefficient of L_corr')
-    parser.add_argument('--L_p_coef', type=float, default=1,
+    parser.add_argument('--L_p_coef', type=float, default=0.01,
                         help='the coefficient of L_p')
-    parser.add_argument('--L_e_coef', type=float, default=1,
+    parser.add_argument('--L_e_coef', type=float, default=0.01,
                         help='the coefficient of L_e')
     
     
@@ -188,7 +188,7 @@ def parse_args():
                         help='if select from whole data')
     parser.add_argument('--p_threshold', default=0.5, type=float, help='clean probability threshold')
     parser.add_argument('--less_p_threshold', default = 0.5, type=float, help='noisy probability threshold')
-    parser.add_argument('--r', default=0.1, type=float, help='noise ratio')
+    parser.add_argument('--r', default=0.5, type=float, help='noise ratio')
     parser.add_argument('--T', default=0.5, type=float, help='sharpening temperature')
     parser.add_argument('--lambda_u', default=25, type=float, help='weight for unsupervised loss')
     parser.add_argument('--plt_loss_density', action='store_true', default=True,
@@ -258,10 +258,9 @@ def main(args, dataset_name=None):
     elif args.dataset in datasets.uea_dataset_list():
         X, Y = load_uea(args.dataset)
     elif args.dataset == 'MIMIC':
-        X,Y = prepare_dataloader(args.deleteMIMIC)  
-        
+        X, Y = prepare_dataloader(args.deleteMIMIC)  
     elif args.dataset == 'eICU':
-        X,Y = prepare_eICU()
+        X, Y = prepare_eICU()
     else:
         X, Y = load_ucr(args.dataset)
     classes = len(np.unique(Y))
@@ -369,49 +368,50 @@ if __name__ == '__main__':
     if args.ucr==128:
         ucr=datasets.ucr_dataset_list()[args.from_ucr:args.end_ucr]
     else:
-        # ucr=['eICU','MIMIC','ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
-        #       'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
         
-        ucr=['MIMIC','ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
-              'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
-    
-        # ucr = ['eICU']
-        # ucr = ['ArrowHead']
-        # ucr = ['MIMIC']
-        # ucr = ['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
-        #        'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
+        if args.dataset == "Benchmark":
+            ucr=['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
+                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
+        elif args.dataset == "Medical":
+            ucr=['MIMIC','eICU']
         
-        # ucr=["ShapesAll", 
-        #     "Rock", 
-        #     "PigArtPressure", 
-        #     "ProximalPhalanxOutlineCorrect", 
-        #     "ShapeletSim", 
-        #     "SmoothSubspace", 
-        #     "StarlightCurves", 
-        #     "Wafer"]
+        elif args.dataset == "All":
+            ucr=['MIMIC','ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
+                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
+        elif args.dataset == "eICU":
+            ucr=["eICU"]
         
-        
-        # Imbalanced dataset
-        # ucr = [
-        #     # UCR Datasets
-        #     # 'MIMIC',
-        #     "NonInvasiveFetalECGThorax1",
-        #     "HandOutlines",
-        #     "StarLightCurves",
-        #     "PhalangesOutlinesCorrect",
-        #     "ECG5000",
-        #     "FordA",
-        #     "FordB",
+        elif args.dataset == "MIMIC":
+            ucr=['MIMIC']
             
-        #     # UEA Datasets
-        #     "BasicMotions",
-        #     "Cricket",
-        #     "Handwriting",
-        #     "InsectWingbeatSound",
-        #     "JapaneseVowels",
-        #     "PenDigits",
-        #     "PEMS-SF"
-        # ]
+        
+            
+        elif args.dataset =="Imbalance":
+            ucr = [
+                # UCR Datasets
+                # 'MIMIC',
+                "NonInvasiveFetalECGThorax1",
+                "HandOutlines",
+                "StarLightCurves",
+                "PhalangesOutlinesCorrect",
+                "ECG5000",
+                "FordA",
+                "FordB",
+                
+                # UEA Datasets
+                "BasicMotions",
+                "Cricket",
+                "Handwriting",
+                "InsectWingbeatSound",
+                "JapaneseVowels",
+                "PenDigits",
+                "PEMS-SF"
+                
+            ]
+        else:
+            ucr =["ArrowHead"]
+            
+    run_name = args.dataset
 
     for dataset_name in ucr:
         args = parse_args()
@@ -438,7 +438,7 @@ if __name__ == '__main__':
 
         # Construct the full path with the label noise type, epoch number, and learning rate
         path = os.path.abspath(os.path.join(basicpath, 'statistic_results', 
-                                            f'{args.outfile}_{noise_type}_{epoch_num}_{learning_rate}.csv'))
+                                            f'{args.outfile}_{noise_type}_{epoch_num}_{learning_rate}_{run_name}.csv'))
 
         # Save the DataFrame to the file
         pd.DataFrame(result_value).to_csv(path)
