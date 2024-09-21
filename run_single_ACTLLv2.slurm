@@ -16,13 +16,13 @@
 # Run the Python script
 
 python src/main.py \
-    --dataset Medical \
-    --outfile ACTLL_TimeCNN_BMMv2_CrossEntorpy_changeCorr_batch256_newCeof_cosine \
+    --dataset Benchmark \
+    --outfile ACTLL_TimeCNN_BMMv2_CrossEntorpy_newCoef_batch256_cosine \
     --ni 0.1 \
     --label_noise 0 \
     --model ACTLLv2 \
     --modelloss CrossEntropy \
-    --epochs 200 \
+    --epochs 300 \
     --batch_size 256 \
     --lr 2e-4 \
     --sel_method 5 \
@@ -30,14 +30,14 @@ python src/main.py \
     --augment True \
     --corr True \
     --correct_start 10 \
-    --correct_end 200 \
+    --correct_end 300 \
     --mean_loss_len 10 \
-    --L_aug_coef 10 \
+    --L_aug_coef 1 \
     --L_rec_coef 1 \
     --L_cls_coef 0.1 \
     --L_cor_coef 0.1 \
     --L_p_coef 0.1 \
-    --L_e_coef 1
+    --L_e_coef 0.1
 
 
 

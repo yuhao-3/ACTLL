@@ -215,13 +215,28 @@ def initialize_Cluster(data_loader, kmeans, loss_centroids, model,optimizer,crit
     return embedding, cluster_centers, loss_centroids
 
 
+def get_class_weights_from_loader(train_loader, num_classes):
+    # Collect all the targets (labels) from the train loader
+    all_targets = []
+    for _, targets in train_loader:
+        all_targets.extend(targets.numpy())  # Convert tensor to numpy and collect all targets
+
+    # Compute class weights using sklearn
+    class_weights = compute_class_weight(class_weight='balanced', classes=np.arange(num_classes), y=all_targets)
+
+    # Convert the result to a PyTorch tensor
+    class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32)
+    return class_weights_tensor
+
+
 def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=None):
     
-    
+    class_weights = get_class_weights_from_loader(train_loader, args.nbins)
+
     if args.modelloss == 'Focal':
         criterion = FocalLoss(gamma=2.0, reduction='none')
     else:
-        criterion = nn.CrossEntropyLoss(reduce=False)
+        criterion = nn.CrossEntropyLoss(weight=class_weights,reduce=False)
     
     classes = args.nbins
     loss_centroids = CentroidLoss(args.embedding_size, classes, reduction='none').to(device)
@@ -758,20 +773,6 @@ def ensemble_k_augment(x, args, aug_type=['GNoise', 'Oversample', 'Convolve', 'C
 
 
 
-def adjust_coefficients(L_p_coef, L_e_coef, current_dataset_size, base_size=100000):
-    """
-    Adjusts L_p and L_e coefficients dynamically based on the current dataset size.
-    Larger dataset sizes will result in smaller coefficients, while smaller dataset
-    sizes will result in larger coefficients.
-    """
-    # Calculate the scaling factor (inverse proportionality to dataset size)
-    scale_factor = base_size / current_dataset_size
-    
-    # Adjust the coefficients by multiplying by the scale factor
-    adjusted_L_p_coef = L_p_coef * scale_factor
-    adjusted_L_e_coef = L_e_coef * scale_factor
-
-    return adjusted_L_p_coef, adjusted_L_e_coef
 
 
 def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion, yhat_hist, bmm_models, loss_all=None, epoch=0, args=None, sel_dict=None, ):
@@ -972,10 +973,10 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
 
 
 
-        # print(f"Batch {batch_idx + 1} | L_conf: {L_conf.item():.4f} | L_aug: {aug_model_loss.item():.4f} | L_rec: {recon_loss.item():.4f}")
-        # print(f"L_corr: {L_corr.item():.4f} | L_cls: {clustering_loss.item():.4f} | L_p: {L_p.item():.4f} | L_e: {L_e.item():.4f}")
+        print(f"Batch {batch_idx + 1} | L_conf: {L_conf.item():.4f} | L_aug: {aug_model_loss.item():.4f} | L_rec: {recon_loss.item():.4f}")
+        print(f"L_corr: {L_corr.item():.4f} | L_cls: {clustering_loss.item():.4f} | L_p: {L_p.item():.4f} | L_e: {L_e.item():.4f}")
 
-        # print(f"model_loss {model_loss.item():.4f}")
+        print(f"model_loss {model_loss.item():.4f}")
 
 
         avg_loss += model_loss.item()
