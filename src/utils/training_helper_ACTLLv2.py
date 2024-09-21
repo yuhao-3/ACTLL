@@ -232,8 +232,8 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
     
     
     # Initialize learning rate scheduler
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=60, gamma=0.5)
-    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=60, gamma=0.5)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     
     
     # learning history
@@ -948,8 +948,6 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
 
 
         # Get the current dataset size (you can get this from train_loader or dataset)
-        current_dataset_size = len(data_loader.dataset)
-
         # Dynamically adjust coefficients based on dataset size
         # adjusted_L_p_coef, adjusted_L_e_coef = adjust_coefficients(args.L_p_coef, args.L_e_coef, current_dataset_size)
 

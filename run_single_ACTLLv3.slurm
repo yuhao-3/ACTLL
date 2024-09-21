@@ -16,7 +16,7 @@
 # Run the Python script
 
 python src/main.py \
-    --dataset MIMIC \
+    --dataset Benchmark \
     --outfile ACTLL_TimeCNN_BMMv3_CrossEntorpy \
     --ni 0.1 \
     --label_noise 0 \

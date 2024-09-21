@@ -483,4 +483,6 @@ def train_step_CTW(data_loader, model, optimizer,  criterion, loss_all=None,epoc
 
         confident_set_id=np.concatenate((confident_set_id,x_idx[model_sel_idx].cpu().numpy()))
 
+    print("Confident Samples lengths")
+    print(len(confident_set_id))
     return (avg_accuracy / global_step, avg_accuracy_aug / aug_step), avg_loss / global_step, model,confident_set_id

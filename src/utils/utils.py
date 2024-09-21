@@ -1133,8 +1133,8 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
                 mean_noisy = bmm.means_()[bmm.means_argmax()]
                 
                 # Dynamic thresholds
-                p_threshold = mean_clean + 0.7 * (mean_clean - mean_noisy)
-                less_p_threshold = mean_noisy - 0.4 * (mean_clean - mean_noisy)
+                p_threshold = mean_clean 
+                less_p_threshold = mean_noisy
                 
                 # Clamp thresholds to valid probability range [0, 1]
                 p_threshold = np.clip(p_threshold, 0, 1)
@@ -1145,7 +1145,7 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
                                  prob[clean_idx] >= p_threshold]
                 
                 # Add less confident index
-                less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if prob[noisy_idx] <= less_p_threshold]
+                less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if loss_mean[noisy_idx] <= less_p_threshold]
 
                 less_confident_idx = torch.tensor(less_confident_labels).long()
                 model_sm_idx = torch.tensor(clean_labels).long()
@@ -1189,7 +1189,8 @@ def small_loss_criterion_without_EPS(model_loss, rt,loss_all=None,args=None,epoc
     model_loss_filter = torch.zeros((model_loss.size(0))).to(device)
     model_loss_filter[model_sm_idx] = 1.0
     model_loss = (model_loss_filter * model_loss).sum()
-
+    
+    
     return model_loss, model_sm_idx
 
 def small_loss_criterion(model_loss, rt,loss_all=None,args=None,epoch=None,x_idxs=None):
@@ -1329,7 +1330,7 @@ def select_sample_from_BMM(model_loss, loss_all, bmm_models, args, x_idxs, epoch
             
             # FIT BETA MIXTURE MODEL
             
-            feats_ = np.ravel(feats).astype(np.float64).reshape(-1, 1)
+            # feats_ = np.ravel(feats).astype(np.float64).reshape(-1, 1)
             
             # This is clean probability! ?????
             # prob_clean = bmm_models[i].posterior(feats_,bmm_models[i].means_argmin())
@@ -1345,14 +1346,12 @@ def select_sample_from_BMM(model_loss, loss_all, bmm_models, args, x_idxs, epoch
             mean_clean = bmm_models[i].means_()[bmm_models[i].means_argmin()]
             mean_noisy = bmm_models[i].means_()[bmm_models[i].means_argmax()]
             
-            # Adjust prob
-                            
             # Add confident index
             clean_labels += [clean_idx for clean_idx in range(len(cls_index)) if
-                                loss_mean[clean_idx] <= mean_clean]
+                                each_label_loss[clean_idx] <= mean_clean]
             
             # Add less confident index
-            less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if loss_mean[noisy_idx] >= mean_noisy]
+            less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if each_label_loss[noisy_idx] >= mean_noisy]
 
             less_confident_idx = torch.tensor(less_confident_labels).long()
             model_sm_idx = torch.tensor(clean_labels).long()
@@ -1374,7 +1373,7 @@ def select_sample_from_BMM(model_loss, loss_all, bmm_models, args, x_idxs, epoch
         # print(len(batch_idx[labels_numpy==i][less_confident_idx]))
         # print(len(batch_idx[labels_numpy==i][model_sm_idx]))
         
-        less_conf_idx = torch.concat((less_confident_idx,batch_idx[labels_numpy==i][less_confident_idx]))
+        less_conf_idx = torch.concat((less_conf_idx,batch_idx[labels_numpy==i][less_confident_idx]))
         all_sm_idx = torch.concat((all_sm_idx,batch_idx[labels_numpy==i][model_sm_idx]))
 
 

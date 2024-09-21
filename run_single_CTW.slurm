@@ -15,18 +15,18 @@
 
 # Run the Python script
 
-# python src/main.py \
-#     --dataset MIMIC \
-#     --outfile CTW\
-#     --ni 0.1 \
-#     --label_noise 0 \
-#     --model CTW \
-#     --epochs 300 \
-#     --lr 1e-3 \
+python src/main.py \
+    --dataset Benchmark \
+    --outfile CTW\
+    --ni 0.1 \
+    --label_noise 0 \
+    --model CTW \
+    --epochs 300 \
+    --lr 1e-3 \
 
 
-chmod +x run_ablation_CTW.sh
-./run_ablation_CTW.sh
+# chmod +x run_ablation_CTW.sh
+# ./run_ablation_CTW.sh
 
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##
