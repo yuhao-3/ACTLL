@@ -999,6 +999,21 @@ def small_loss_criterion_EPS(model_loss,loss_all=None,args=None,epoch=None,x_idx
 
     return L_conf, model_sm_idxs, less_confident_idxs
 
+def calculate_scaling_factor(dataset_size):
+    """
+    Calculates the scaling factor based on the dataset size.
+    A smaller dataset size will have a larger scaling factor (more lenient),
+    while a larger dataset size will have a smaller scaling factor (more strict).
+    
+    Args:
+        dataset_size (int): Size of the dataset.
+    
+    Returns:
+        float: The scaling factor.
+    """
+    scaling_factor = 1 / (1 + np.log(dataset_size))
+    return scaling_factor
+
 def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=None,labels=None,p_threshold=0.5):
     '''
     select confident samples class by class:
@@ -1038,7 +1053,7 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
     rate=(loss_mean<=loss_mean.mean()).mean()
     
     # Default initialization of less_confident_idx
-    less_confident_idx = torch.tensor([]).long()  # Add this default initialization
+    less_confident_idxs = torch.tensor([]).long()  # Add this default initialization
 
     for i in range(args.nbins):
         if (labels_numpy==i).sum()>1:
@@ -1132,9 +1147,23 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
                 mean_clean = bmm.means_()[bmm.means_argmin()]
                 mean_noisy = bmm.means_()[bmm.means_argmax()]
                 
+                
+                
                 # Dynamic thresholds
-                p_threshold = mean_clean 
-                less_p_threshold = mean_noisy
+                scaling_factor = calculate_scaling_factor(len(cls_index))
+                p_threshold = mean_clean
+                less_p_threshold = mean_noisy 
+                
+                # For smaller datasets, make mean_clean larger (lenient) and mean_noisy smaller
+                
+                
+                # Elimintating the case when both threshold = 0.5
+                if p_threshold !=  less_p_threshold:
+                    sigma_clean, sigma_noisy = bmm.sd_()
+                    alpha = 0.5
+                    p_threshold = mean_clean + (alpha * sigma_clean * scaling_factor)  # Increases with smaller datasets
+                    less_p_threshold = mean_noisy - (alpha * sigma_noisy * scaling_factor)  # Decreases with smaller datasets
+                    
                 
                 # Clamp thresholds to valid probability range [0, 1]
                 p_threshold = np.clip(p_threshold, 0, 1)
@@ -1142,10 +1171,10 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
                             
                 # Add confident index
                 clean_labels += [clean_idx for clean_idx in range(len(cls_index)) if
-                                 prob[clean_idx] >= p_threshold]
+                                feats[clean_idx] <= p_threshold]
                 
                 # Add less confident index
-                less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if loss_mean[noisy_idx] <= less_p_threshold]
+                less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if feats[noisy_idx] >= less_p_threshold]
 
                 less_confident_idx = torch.tensor(less_confident_labels).long()
                 model_sm_idx = torch.tensor(clean_labels).long()
@@ -1155,14 +1184,17 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
                 _, less_confident_idx = torch.topk(torch.from_numpy(each_label_loss), k=int(each_label_loss.size*rate), largest=True)
             
             all_sm_idx=torch.concat((all_sm_idx,batch_idx[labels_numpy==i][model_sm_idx]))
+            less_confident_idxs = torch.concat((less_confident_idxs,batch_idx[labels_numpy==i][less_confident_idx]))
+        
         elif (labels_numpy==i).sum()==1:
             all_sm_idx=torch.concat((all_sm_idx,batch_idx[labels_numpy==i]))
-
+            less_confident_idxs = torch.concat((less_confident_idxs,batch_idx[labels_numpy==i]))
+    
     model_loss_filter = torch.zeros((model_loss.size(0))).to(device)
     model_loss_filter[all_sm_idx] = 1.0
     model_loss = (model_loss_filter * model_loss).sum()
 
-    return model_loss, all_sm_idx, less_confident_idx
+    return model_loss, all_sm_idx, less_confident_idxs
 
 def small_loss_criterion_without_EPS(model_loss, rt,loss_all=None,args=None,epoch=None,x_idxs=None,estimate_noise_rate=None):
     '''
@@ -1494,6 +1526,9 @@ class BetaMixture1D(object):
         # Find the index of the distribution with the smallest mean
         return np.argmax(means)
     
+    
+    
+    
 
     def predict(self, x):
         return self.posterior(x, 1) > 0.5
@@ -1528,8 +1563,19 @@ class BetaMixture1D(object):
         """
         return self.alphas / (self.alphas + self.betas)
     
-    
-    
+    def sd_(self):
+        """
+        Returns the standard deviation of the beta distributions for each component.
+        The mean of a beta distribution is given by alpha / (alpha + beta).
+        """
+        variances = (self.alphas * self.betas) / ((self.alphas + self.betas)**2 * (self.alphas + self.betas + 1))
+        sigmas = np.sqrt(variances)
+        # Clean corresponds to the larger mean, noisy to the smaller
+        clean_idx = self.means_argmax()
+        noisy_idx = self.means_argmin()
+        sigma_clean = sigmas[clean_idx]
+        sigma_noisy = sigmas[noisy_idx]
+        return sigma_clean, sigma_noisy 
     
 
 
@@ -1565,3 +1611,5 @@ def mixup_criterion_mixSoft(pred, y_a, y_b, B, lam, index, output_x1, output_x2)
                 (1 - B[index]) * F.nll_loss(pred, y_b, reduction='none') + B[index] * (
             -torch.sum(F.softmax(output_x2, dim=1) * pred, dim=1)))) / len(
         pred)
+            
+            

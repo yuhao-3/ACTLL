@@ -7,7 +7,7 @@
 
 ############ Symmetric NOISE #############
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile CTW \
     --ni 0.1 \
     --label_noise 0 \
@@ -16,7 +16,7 @@ nohup python src/main.py \
     --lr 1e-3 \
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile CTW \
     --ni 0.2 \
     --label_noise 0 \
@@ -26,7 +26,7 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile CTW \
     --ni 0.3 \
     --label_noise 0 \
@@ -36,7 +36,7 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile CTW\
     --ni 0.4 \
     --label_noise 0 \
@@ -46,7 +46,7 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile CTW \
     --ni 0.5 \
     --label_noise 0 \
@@ -56,7 +56,7 @@ nohup python src/main.py \
 
 # ######## Asymmetric NOISE #############
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile CTW \
     --ni 0.1 \
     --label_noise 1 \
@@ -65,7 +65,7 @@ nohup python src/main.py \
     --lr 1e-3 \
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile CTW\
     --ni 0.2 \
     --label_noise 1 \
@@ -75,7 +75,7 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile CTW \
     --ni 0.3 \
     --label_noise 1 \
@@ -87,7 +87,7 @@ nohup python src/main.py \
 ######## INSTANCE DEPENDENT NOISE #############
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile CTW \
     --ni 0.3 \
     --label_noise -1 \
@@ -97,7 +97,7 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile CTW \
     --ni 0.4 \
     --label_noise -1 \

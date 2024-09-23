@@ -25,6 +25,7 @@ from src.ucr_data.load_ucr_pre import load_ucr
 from src.uea_data.load_uea_pre import load_uea
 from src.utils.log_utils import StreamToLogger,get_logger,create_logfile
 from src.utils.load_MIMIC import prepare_dataloader
+from src.utils.load_eICU import prepare_eICU
 
 warnings.filterwarnings("ignore")
 torch.backends.cudnn.benchmark = True
@@ -155,6 +156,8 @@ def main(args,dataset_name=None):
         
     elif args.dataset == 'MIMIC':
         X,Y = prepare_dataloader(args.deleteMIMIC) 
+    elif args.dataset == 'eICU':
+        X,Y = prepare_eICU()
     else:
         X, Y = load_uea(args.dataset)
 
@@ -243,10 +246,20 @@ if __name__ == '__main__':
     if args.ucr == 128:
         ucr = datasets.ucr_dataset_list()[args.from_ucr:args.end_ucr]
     else:
-        ucr=['MIMIC','ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
-             'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
+        if args.dataset == "Benchmark":
+            ucr=['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
+                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
+        elif args.dataset == "Medical":
+            ucr=['MIMIC','eICU']
         
-        # ucr = ['MIMIC']
+        elif args.dataset == "All":
+            ucr=['MIMIC','ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
+                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
+        elif args.dataset == "eICU":
+            ucr=["eICU"]
+        
+        elif args.dataset == "MIMIC":
+            ucr=['MIMIC']
 
     for dataset_name in ucr:
         args = parse_args()

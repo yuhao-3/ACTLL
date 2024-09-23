@@ -101,8 +101,6 @@ def add_to_confident_set_id(args=None,confident_set_id=None,train_dataset=None,e
 
         conf_num.append(confnum_row)
     estimate_noise_rate=TP_all/(TP_all+FP_all)
-    print(conf_num)
-    print(estimate_noise_rate)
     return conf_num, estimate_noise_rate
 
 def save_model_and_sel_dict(model,args,sel_dict=None):
@@ -210,11 +208,6 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
     
     if args.modelloss == 'Focal':
         criterion = FocalLoss(gamma=2.0, reduction='none')
-    # elif args.modelloss == 'ActivePassive':
-    #     # Define the active loss (e.g., CrossEntropyLoss) and passive loss (e.g., MeanSquaredError)
-    #     active_loss_fn = FocalLoss(gamma=2.0, reduction='none')
-    #     passive_loss_fn = nn.MSELoss()
-    #     criterion = ActivePassiveLoss(active_loss=active_loss_fn, passive_loss=passive_loss_fn, alpha=0.7, beta=0.3)
     else:
         criterion = nn.CrossEntropyLoss(reduce=False)
     
@@ -605,6 +598,25 @@ def warmup_ACTLL(data_loader, model, kmeans, loss_centroids, yhat_hist, optimize
     return (avg_accuracy / global_step,0.), avg_loss / global_step, model, loss_centroids, yhat_hist
 
 
+
+
+def fft_augmentation(x, freq_scale=0.1):
+    # Apply Fast Fourier Transform (FFT)
+    fft_data = np.fft.fft(x.cpu().numpy(), axis=-1)
+    
+    # Modify low frequencies
+    fft_data[:, :int(fft_data.shape[-1] * freq_scale)] = 0.0
+    
+    # Apply inverse FFT
+    augmented_data = np.fft.ifft(fft_data, axis=-1)
+    
+    return torch.from_numpy(augmented_data.real).float().to(device)
+
+
+
+
+
+
 ########### CORRECT THE LESS CONFIDENT LABEL USING RESULT OF CLUSTERING OUTCOME###############
 def label_correction(embedding, centers, y_obs, yhat_hist, w_yhat, w_c, w_obs, classes):
     
@@ -704,9 +716,12 @@ def train_step_ACTLL(data_loader, model, loss_centroids, optimizer, criterion, y
         # ################# L_AUG #######################
         # Data Augmentation after selecting clean samples
         if (batch_idx % args.arg_interval == 0) and len(model_sel_idx) != 1 and args.augment == True:
-            x_aug = torch.from_numpy(
-                tsaug.TimeWarp(n_speed_change=5, max_speed_ratio=3).augment(
-                    x[model_sel_idx].cpu().numpy())).float().to(device)
+            # x_aug = torch.from_numpy(
+            #     tsaug.TimeWarp(n_speed_change=5, max_speed_ratio=3).augment(
+            #         x[model_sel_idx].cpu().numpy())).float().to(device)
+            
+            x_aug = fft_augmentation(x[model_sel_idx])
+            
             aug_step += 1
             if len(x_aug) == 1:  # Avoid bugs
                 aug_model_loss = torch.tensor(0.)
@@ -751,10 +766,7 @@ def train_step_ACTLL(data_loader, model, loss_centroids, optimizer, criterion, y
             corrected_labels = label_correction(h, loss_centroids.centers, y_hat.clone(), yhat_hist[x_idx],
                                                w_yhat, w_c, w_obs, classes)
             
-            # y_hat = y_hat.clone()  # Clone y_hat to avoid in-place modification issues
-            # y_hat[less_confident_idxs] = corrected_labels[less_confident_idxs]
-            # L_corr = criterion(out[less_confident_idxs], y_hat[less_confident_idxs]).mean()           
-            
+
             y_corrected = y_hat.clone()
             y_corrected[less_confident_idxs] = corrected_labels[less_confident_idxs]
             L_corr = criterion(out[less_confident_idxs], y_corrected[less_confident_idxs]).mean()
@@ -778,28 +790,6 @@ def train_step_ACTLL(data_loader, model, loss_centroids, optimizer, criterion, y
         clustering_loss = torch.clamp(clustering_loss, min=1e-8, max=1e8)
 
 
-
-
-        # def check_nan_and_inf(tensor_or_float, name):
-        #     if isinstance(tensor_or_float, int):
-        #         print(f"{name} is an integer, skipping NaN/Inf check")
-        #         return
-        #     if isinstance(tensor_or_float, float):
-        #         tensor_or_float = torch.tensor(tensor_or_float)  # Convert floats to tensors
-            
-        #     print(f"Checking {name}: value {tensor_or_float}, shape: {tensor_or_float.shape}")
-            
-        #     assert not torch.isnan(tensor_or_float).any(), f"{name} contains NaN values"
-        #     assert not torch.isinf(tensor_or_float).any(), f"{name} contains infinity values"
-        #     print(f"{name} passed NaN and Inf check")
-            
-        # print(f"L_conf: {L_conf}")
-        # print(f"aug_model_loss: {aug_model_loss}")
-        # print(f"recon_loss: {recon_loss}")
-        # print(f"clustering_loss: {clustering_loss}")
-        # print(f"L_corr: {L_corr}")
-        # print(f"L_p: {L_p}")
-        # print(f"L_e: {L_e}")
 
 
         model_loss = L_conf + args.L_aug_coef * aug_model_loss + args.L_rec_coef * recon_loss + \
@@ -826,6 +816,8 @@ def train_step_ACTLL(data_loader, model, loss_centroids, optimizer, criterion, y
 
         yhat_hist[x_idx] = yhat_hist[x_idx].roll(1, dims=-1)  # Roll the elements along the last dimension
         yhat_hist[x_idx, :, 0] = prob.detach()  # Assign the probability to the first position
+        
+        
         
 
     return (avg_accuracy / global_step, avg_accuracy_aug / aug_step), avg_loss / global_step, model, confident_set_id

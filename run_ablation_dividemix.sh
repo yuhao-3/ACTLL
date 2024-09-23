@@ -7,81 +7,81 @@
 
 ############# Symmetric NOISE #############
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile dividemix \
     --ni 0.1 \
     --label_noise 0 \
     --model dividemix\
-    --epochs 30 \
+    --epochs 100 \
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile dividemix \
     --ni 0.2 \
     --label_noise 0 \
     --model dividemix\
-    --epochs 30 \
+    --epochs 100 \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile dividemix \
     --ni 0.3 \
     --label_noise 0 \
     --model dividemix\
-    --epochs 30 \
+    --epochs 100 \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile dividemix\
     --ni 0.4 \
     --label_noise 0 \
     --model dividemix \
-    --epochs 30 \
+    --epochs 100 \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile dividemix \
     --ni 0.5 \
     --label_noise 0 \
     --model dividemix\
-    --epochs 30 \
+    --epochs 100 \
 
 
 
 ######## Asymmetric NOISE #############
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile dividemix \
     --ni 0.1 \
     --label_noise 1 \
     --model dividemix \
-    --epochs 30 \
+    --epochs 100 \
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile dividemix\
     --ni 0.2 \
     --label_noise 1 \
     --model dividemix\
-    --epochs 30 \
+    --epochs 100 \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile dividemix \
     --ni 0.3 \
     --label_noise 1 \
     --model dividemix\
-    --epochs 30 \
+    --epochs 100 \
 
 
 ######## INSTANCE DEPENDENT NOISE #############
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile dividemix\
     --ni 0.3 \
     --label_noise -1 \
@@ -89,7 +89,7 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile dividemix \
     --ni 0.4 \
     --label_noise -1 \

@@ -7,26 +7,26 @@
 
 ############# Symmetric NOISE #############
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_SLoss \
     --ni 0.1 \
     --label_noise 0 \
     --model ACTLL \
     --modelloss Focal \
-    --epochs 30 \
+    --epochs 100 \
     --sel_method 0 \
     --AEChoice Diffusion \
     --augment True \
     --corr True \
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_SLoss \
     --ni 0.2 \
     --label_noise 0 \
     --model ACTLL \
     --modelloss Focal \
-    --epochs 30 \
+    --epochs 100 \
     --sel_method 1 \
     --AEChoice Diffusion\
     --augment True \
@@ -34,13 +34,13 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_SLoss \
     --ni 0.3 \
     --label_noise 0 \
     --model ACTLL \
     --modelloss Focal \
-    --epochs 30 \
+    --epochs 100 \
     --sel_method 1 \
     --AEChoice Diffusion\
     --augment True \
@@ -48,13 +48,13 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_SLoss \
     --ni 0.4 \
     --label_noise 0 \
     --model ACTLL \
     --modelloss Focal \
-    --epochs 30 \
+    --epochs 100 \
     --sel_method 1 \
     --AEChoice Diffusion\
     --augment True \
@@ -62,13 +62,13 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_SLoss \
     --ni 0.5 \
     --label_noise 0 \
     --model ACTLL \
     --modelloss Focal \
-    --epochs 30 \
+    --epochs 100 \
     --sel_method 1 \
     --AEChoice Diffusion\
     --augment True \
@@ -79,26 +79,26 @@ nohup python src/main.py \
 ######## Asymmetric NOISE #############
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_SLoss \
     --ni 0.1 \
     --label_noise 1 \
     --model ACTLL \
     --modelloss Focal \
-    --epochs 30 \
+    --epochs 100 \
     --sel_method 1 \
     --AEChoice Diffusion\
     --augment True \
     --corr True \
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_SLoss \
     --ni 0.2 \
     --label_noise 1 \
     --model ACTLL \
     --modelloss Focal \
-    --epochs 30 \
+    --epochs 100 \
     --sel_method 1 \
     --AEChoice Diffusion\
     --augment True \
@@ -106,13 +106,13 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_SLoss \
     --ni 0.3 \
     --label_noise 1 \
     --model ACTLL \
     --modelloss Focal \
-    --epochs 30 \
+    --epochs 100 \
     --sel_method 1 \
     --AEChoice Diffusion\
     --augment True \
@@ -122,26 +122,26 @@ nohup python src/main.py \
 ######## INSTANCE DEPENDENT NOISE #############
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_SLoss \
     --ni 0.3 \
     --label_noise -1 \
     --model ACTLL \
     --modelloss Focal \
-    --epochs 30 \
+    --epochs 100 \
     --sel_method 1 \
     --AEChoice Diffusion \
     --augment True \
     --corr True \
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_SLoss \
     --ni 0.4 \
     --label_noise -1 \
     --model ACTLL \
     --modelloss Focal \
-    --epochs 30 \
+    --epochs 100 \
     --sel_method 1 \
     --AEChoice Diffusion \
     --augment True \

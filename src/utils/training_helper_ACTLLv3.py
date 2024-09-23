@@ -177,39 +177,6 @@ def test_step(data_loader, model,model2=None):
 
 
 
-def initialize_Cluster(data_loader, kmeans, loss_centroids, model,optimizer,criterion, epoch, 
-                       loss_all,args):
-
-    # KMeans after the first milestone - Training WarmUp
-    # Init cluster centers with KMeans
-    embedding = []
-    targets = []
-    with torch.no_grad():
-        model.eval()
-        loss_centroids.eval()
-        for batch_idx,(data, target, _ ,_) in enumerate(data_loader):
-            data = data.to(device)
-            output = model.encoder(data)
-            embedding.append(output.squeeze(-1).cpu().numpy())
-            targets.append(target.numpy())
-    embedding = np.concatenate(embedding, axis=0)
-
-    targets = np.concatenate(targets, axis=0)
-    predicted = kmeans.fit_predict(embedding)
-    reassignment, accuracy = cluster_accuracy(targets, predicted)
-    # predicted_ordered = np.array(list(map(lambda x: reassignment[x], predicted)))
-    # Center reordering. Swap keys and values and sort by keys.
-    cluster_centers = kmeans.cluster_centers_[
-        list(dict(sorted({y: x for x, y in reassignment.items()}.items())).values())]
-    cluster_centers = torch.tensor(cluster_centers, dtype=torch.float, requires_grad=True).to(device)
-    with torch.no_grad():
-        # initialise the cluster centers
-        loss_centroids.state_dict()["centers"].copy_(cluster_centers)
-        
-        
-    return embedding, cluster_centers, loss_centroids
-
-
 def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=None):
     
     
@@ -219,10 +186,8 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
         criterion = nn.CrossEntropyLoss(reduce=False)
     
     classes = args.nbins
-    loss_centroids = CentroidLoss(args.embedding_size, classes, reduction='none').to(device)
-    # criterion = nn.CrossEntropyLoss(reduce=False)
     optimizer = torch.optim.Adam(
-        list(filter(lambda p: p.requires_grad, model.parameters())) + list(loss_centroids.parameters()),
+        list(filter(lambda p: p.requires_grad, model.parameters())),
         lr=args.lr, weight_decay=args.l2penalty, eps=1e-4)
     
     
@@ -253,8 +218,8 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
             
             # training step
             if e <= args.warmup: 
-                loss_all, train_accuracy, avg_loss, model_new, loss_centroids, y_hat_hist = warmup_ACTLL(data_loader=train_loader,model=model, 
-                                                                                             kmeans = kmeans, loss_centroids= loss_centroids,
+                loss_all, train_accuracy, avg_loss, model_new, y_hat_hist = warmup_ACTLL(data_loader=train_loader,model=model, 
+                                                                                             kmeans = kmeans,
                                                                             yhat_hist=yhat_hist, 
                                                                             optimizer=optimizer,
                                                                             criterion=criterion,
@@ -262,7 +227,7 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
                                                                             loss_all=loss_all,
                                                                             args=args)
 
-            elif e<=50:
+            else:
                 # Fit beta mixture models based on warmup loss(First)
                 # Fit n-classes 2-component BMM Models
                 bmm_models= fit_bmm_models(loss_all = loss_all, data_loader = train_loader, args = args, epoch = e)
@@ -270,7 +235,6 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
                 loss_all, train_accuracy, avg_loss, model_new, confident_set_id, less_conf_id = train_step_ACTLLv3(
                     data_loader=train_loader,
                     model=model,
-                    loss_centroids = loss_centroids,
                     optimizer=optimizer,
                     loss_all=loss_all,
                     criterion=criterion,
@@ -285,14 +249,14 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
                                                        train_dataset=train_dataset, epoch=e,
                                                        conf_num=conf_num)
                     
-            else:
-                # Confident example as labelled examples, 
-                # less confident exampleas unlabelled examples
+            # else:
+            #     # Confident example as labelled examples, 
+            #     # less confident exampleas unlabelled examples
                     
-                loss_all, train_accuracy, avg_loss, model_new = train_mixmatch_with_given_splits(loss_all, train_loader, model, confident_set_id, less_conf_id, optimizer, 
-                                                                criterion, yhat_hist, e, args, 
-                                                                aug_type=['GNoise', 'Oversample', 'Convolve', 'Crop', 'Drift', 'TimeWarp'], 
-                                                                T=0.5, K=2, alpha=0.75)
+            #     loss_all, train_accuracy, avg_loss, model_new = train_mixmatch_with_given_splits(loss_all, train_loader, model, confident_set_id, less_conf_id, optimizer, 
+            #                                                     criterion, yhat_hist, e, args, 
+            #                                                     aug_type=['GNoise', 'Oversample', 'Convolve', 'Crop', 'Drift', 'TimeWarp'], 
+            #                                                     T=0.5, K=2, alpha=0.75)
                     
             model = model_new 
 
@@ -550,26 +514,14 @@ def plot_train_loss_and_test_acc(avg_train_losses,test_acc_list,args,pred_precis
 
 
 
-def warmup_ACTLL(data_loader, model, kmeans, loss_centroids, yhat_hist, optimizer, criterion,epoch=None,
+def warmup_ACTLL(data_loader, model, kmeans, yhat_hist, optimizer, criterion,epoch=None,
                          loss_all=None,args=None):
     
     
-    # INITIALIZE KMEANS FOR THE FIRST EPOCH
-    if epoch == args.init_centers:
-        embedding, cluster_centers, loss_centroids = initialize_Cluster(data_loader=data_loader,kmeans = kmeans, 
-                                                                 loss_centroids= loss_centroids,
-                                                                 model=model,optimizer=optimizer,
-                                                                 criterion=criterion,
-                                                                 epoch=0,
-                                                                 loss_all=loss_all,
-                                                                 args=args)    
-
-
     global_step = 0
     avg_accuracy = 0.
     avg_loss = 0.
     model = model.train()
-    loss_centroids.train()
     
 
     for batch_idx,(x, y_hat,x_idx,_) in enumerate(data_loader):
@@ -624,7 +576,7 @@ def warmup_ACTLL(data_loader, model, kmeans, loss_centroids, yhat_hist, optimize
         
         
     
-    return loss_all, (avg_accuracy / global_step,0.), avg_loss / global_step, model, loss_centroids, yhat_hist
+    return loss_all, (avg_accuracy / global_step,0.), avg_loss / global_step, model, yhat_hist
 
 
 ########### CORRECT THE LESS CONFIDENT LABEL USING RESULT OF CLUSTERING OUTCOME###############
@@ -680,15 +632,7 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
     less_confident_set_id = np.array([]) 
     classes = args.nbins
     
-    alpha, beta, gamma = args.abg
-    rho = args.class_reg
-    epsilon = args.entropy_reg
-    
-    init_centers = args.init_centers
     p = torch.ones(classes).to(device) / classes
-    correct_start = args.correct_start
-    correct_end = args.correct_end
-    history_track = args.track
     
     
     for batch_idx, (x, y_hat, x_idx, _) in enumerate(data_loader):
@@ -723,10 +667,12 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
         # ################# L_AUG #######################
         # Data Augmentation after selecting clean samples
         if (batch_idx % args.arg_interval == 0) and len(model_sel_idx) != 1 and args.augment == True:
+            
             x_aug = torch.from_numpy(
                 tsaug.TimeWarp(n_speed_change=5, max_speed_ratio=3).augment(
                     x[model_sel_idx].cpu().numpy())).float().to(device)
             aug_step += 1
+            
             if len(x_aug) == 1:  # Avoid bugs
                 aug_model_loss = torch.tensor(0.)
                 avg_accuracy_aug = 0.
@@ -745,57 +691,16 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
             aug_step = 1 # prevent zero division
             avg_accuracy_aug = 0.
             
-            
-            
-        alpha_, beta_, gamma_, epsilon_, rho_ = alpha, beta, gamma, epsilon, rho
 
-
-        ################## L_CORR + DATA CORRECTION FOR LESS CONFIDENT EXAMPLES ##############
-        if len(less_confident_idxs) > 0 and args.corr == True:
-            w_yhat = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=0, high_val=1 * beta)  # Pred
-            w_c = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=0, high_val=1 * gamma)  # Centers
-            w_obs = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=1, high_val=0)  # Observed
-            
-            beta_ = temperature(epoch, th_low=init_centers - history_track, th_high=correct_start,
-                                low_val=0, high_val=beta)  # Class
-            gamma_ = temperature(epoch, th_low=correct_start, th_high=correct_end, low_val=0,
-                                    high_val=gamma)  # Centers
-            rho_ = temperature(epoch, th_low=init_centers- correct_start, th_high=correct_end,
-                                low_val=0, high_val=rho * beta_)  # Lp
-            epsilon_ = temperature(epoch, th_low=init_centers - correct_start, th_high=correct_end,
-                                    low_val=0, high_val=epsilon * beta_)  # Le
-            
-            
-            
-            # Clone y_hat before modification
-            corrected_labels = label_correction(h, loss_centroids.centers, y_hat.clone(), yhat_hist[x_idx],
-                                               w_yhat, w_c, w_obs, classes)
-                   
-            
-            y_corrected = y_hat.clone()
-            y_corrected[less_confident_idxs] = corrected_labels[less_confident_idxs]
-             
- 
-            L_corr = criterion(out[less_confident_idxs], y_corrected[less_confident_idxs]).mean()
         
         
-        else:
-            L_corr = 0
         
-        # Calculating Clustering Module Loss
-        clustering_loss = loss_centroids(h.squeeze(-1), y_hat).mean()    
         
-        L_p = -torch.sum(torch.log(prob_avg) * p)  # Distribution regularization
-        L_e = -torch.mean(torch.sum(prob * F.log_softmax(out, dim=1), dim=1))  # Entropy regularization
         
         
         # Clamping to avoid extreme values
         recon_loss = torch.clamp(recon_loss, min=1e-8, max=1e8)
-        clustering_loss = torch.clamp(clustering_loss, min=1e-8, max=1e8)
-
-
-        model_loss = L_conf + args.L_aug_coef * aug_model_loss + args.L_rec_coef * recon_loss + \
-             gamma_ * clustering_loss + 1 * L_corr + rho_ * L_p + epsilon_ * L_e
+        model_loss = L_conf + args.L_aug_coef * aug_model_loss + args.L_rec_coef * recon_loss 
     
         # Loss exchange
         optimizer.zero_grad()
@@ -812,10 +717,6 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
 
         global_step += 1
         
-        # print("len of index after training steps")
-        # print(len(confident_set_id))
-        # print(len(less_confident_idxs))
-        
         
 
         confident_set_id = np.concatenate((confident_set_id, x_idx[model_sel_idx].cpu().numpy()))
@@ -825,11 +726,6 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
         yhat_hist[x_idx, :, 0] = prob.detach()  # Assign the probability to the first position
         
         
-        
-        
-    # print("len of index after training steps")
-    # print(len(confident_set_id))
-    # print(len(less_confident_set_id))
 
     return loss_all, (avg_accuracy / global_step, avg_accuracy_aug / aug_step), avg_loss / global_step, model, confident_set_id, less_confident_set_id
 

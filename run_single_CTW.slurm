@@ -16,7 +16,7 @@
 # Run the Python script
 
 python src/main.py \
-    --dataset Benchmark \
+    --dataset eICU \
     --outfile CTW\
     --ni 0.1 \
     --label_noise 0 \

@@ -66,7 +66,7 @@ def parse_args():
                                            'single_ae_aug_sel_allaug','single_ae_aug_before_sel','dividemix', 'CTW'
                                            ,'ACTLLv2','ACTLLv3'],
                         default='ACTLL')
-    parser.add_argument('--modelloss', choices = ['Focal','ActivePassive','CrossEntropy'], default = 'Focal')
+    parser.add_argument('--modelloss', choices = ['Focal','WeightedCrossEntropy','CrossEntropy'], default = 'CrossEntropy')
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--deleteMIMIC',default = True)
     parser.add_argument('--aug', choices=['GNoise','NoAug','Oversample','Convolve','Crop','Drift','TimeWarp','Mixup'], default='NoAug')    

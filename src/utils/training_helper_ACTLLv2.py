@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import torch
 torch.autograd.set_detect_anomaly(True)
+
+from sklearn.utils.class_weight import compute_class_weight
 # torch.cuda.set_device(1)
 import torch.nn as nn
 import torch.nn.functional as F
@@ -217,16 +219,24 @@ def initialize_Cluster(data_loader, kmeans, loss_centroids, model,optimizer,crit
 
 def get_class_weights_from_loader(train_loader, num_classes):
     # Collect all the targets (labels) from the train loader
-    all_targets = []
-    for _, targets in train_loader:
-        all_targets.extend(targets.numpy())  # Convert tensor to numpy and collect all targets
+    
+    # Assuming train_loader.dataset.tensors[1] contains target labels
+    all_targets = train_loader.dataset.tensors[1]
 
+    # Convert torch tensor to numpy array if needed
+    if isinstance(all_targets, torch.Tensor):
+        all_targets = all_targets.cpu().numpy()
+
+    # Get unique classes
+    unique_classes = np.unique(all_targets)
+    num_classes = len(unique_classes)
+    
     # Compute class weights using sklearn
-    class_weights = compute_class_weight(class_weight='balanced', classes=np.arange(num_classes), y=all_targets)
+    class_weights = compute_class_weight(class_weight='balanced', classes=unique_classes, y=all_targets)
 
     # Convert the result to a PyTorch tensor
-    class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32)
-    return class_weights_tensor
+    class_weights_tensor = torch.tensor(class_weights)
+    return class_weights_tensor.to(torch.float32)
 
 
 def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=None):
@@ -235,9 +245,13 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
 
     if args.modelloss == 'Focal':
         criterion = FocalLoss(gamma=2.0, reduction='none')
+    elif args.modelloss == 'WeightedCrossEntropy':
+        criterion = nn.CrossEntropyLoss(weight=class_weights.to(device), reduction='none')
+    elif args.modelloss == 'CrossEntropy':
+        criterion = nn.CrossEntropyLoss(reduction='none')
     else:
-        criterion = nn.CrossEntropyLoss(weight=class_weights,reduce=False)
-    
+        criterion = nn.CrossEntropyLoss(reduction='none')
+        
     classes = args.nbins
     loss_centroids = CentroidLoss(args.embedding_size, classes, reduction='none').to(device)
     # criterion = nn.CrossEntropyLoss(reduce=False)
@@ -247,8 +261,8 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
     
     
     # Initialize learning rate scheduler
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=60, gamma=0.5)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.5)
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     
     
     # learning history
@@ -334,7 +348,7 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
                     train_acc_oir,
                     test_accuracy))
             
-            scheduler.step()
+            # scheduler.step()
 
     except KeyboardInterrupt:
         print('*' * shutil.get_terminal_size().columns)
@@ -775,6 +789,21 @@ def ensemble_k_augment(x, args, aug_type=['GNoise', 'Oversample', 'Convolve', 'C
 
 
 
+def fft_augmentation(x, freq_scale=0.1):
+    # Apply Fast Fourier Transform (FFT)
+    fft_data = np.fft.fft(x.cpu().numpy(), axis=-1)
+    
+    # Modify low frequencies
+    fft_data[:, :int(fft_data.shape[-1] * freq_scale)] = 0.0
+    
+    # Apply inverse FFT
+    augmented_data = np.fft.ifft(fft_data, axis=-1)
+    
+    return torch.from_numpy(augmented_data.real).float().to(device)
+
+
+
+
 def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion, yhat_hist, bmm_models, loss_all=None, epoch=0, args=None, sel_dict=None, ):
     
     global_step = 0
@@ -840,6 +869,15 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
     
         L_conf, model_sel_idx, less_confident_idxs = select_sample_from_BMM(loss, loss_all, bmm_models, args, x_idx, epoch, y_hat)
           
+          
+        # L_conf, model_sel_idx, less_confident_idxs = small_loss_criterion_EPS(
+        #         model_loss=loss,
+        #         loss_all=loss_all,
+        #         args=args,
+        #         epoch=epoch,
+        #         x_idxs=x_idx,
+        #         labels=y_hat
+        #     )    
         
         
         # Debugging: Track number of confident and less confident samples
@@ -860,6 +898,10 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
             x_aug = torch.from_numpy(
                 tsaug.TimeWarp(n_speed_change=5, max_speed_ratio=3).augment(
                     x[model_sel_idx].cpu().numpy())).float().to(device)
+            
+            # x_aug = fft_augmentation(x[model_sel_idx])
+            
+            
             aug_step += 1
             
             if len(x_aug) == 1:  # Avoid bugs
@@ -932,16 +974,14 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
         
         # Calculating Clustering Module Loss
         clustering_loss = loss_centroids(h.squeeze(-1), y_hat).mean()    
+        # clustering_loss = Kmeans.fit()
         
         L_p = -torch.sum(torch.log(prob_avg) * p)  # Distribution regularization
         L_e = -torch.mean(torch.sum(prob * F.log_softmax(out, dim=1), dim=1))  # Entropy regularization
         
         
-
-        # New Update Loss Function + Correction Loss
-        # model_loss = L_conf + args.L_aug_coef * aug_model_loss + args.L_rec_coef * recon_loss + 1 * clustering_loss + 1* L_corr + 1*L_p + 1* L_e
-    
-
+        
+        
         # Clamping to avoid extreme values
         recon_loss = torch.clamp(recon_loss, min=1e-8, max=1e8)
         clustering_loss = torch.clamp(clustering_loss, min=1e-8, max=1e8)
@@ -953,8 +993,14 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
         # adjusted_L_p_coef, adjusted_L_e_coef = adjust_coefficients(args.L_p_coef, args.L_e_coef, current_dataset_size)
 
 
+        # model_loss = L_conf + args.L_aug_coef * aug_model_loss + args.L_rec_coef * recon_loss + \
+        #      args.L_cls_coef * clustering_loss + args.L_cor_coef * L_corr + args.L_p_coef * L_p + args.L_e_coef * L_e
+        
+        
+             
+             
         model_loss = L_conf + args.L_aug_coef * aug_model_loss + args.L_rec_coef * recon_loss + \
-             args.L_cls_coef * clustering_loss + args.L_cor_coef * L_corr + args.L_p_coef * L_p + args.L_e_coef * L_e
+             gamma_  * clustering_loss + beta_ * L_corr + L_p * rho_ + L_e * epsilon_
     
         
         # Loss exchange

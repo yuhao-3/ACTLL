@@ -24,7 +24,7 @@ python src/BMM_single_experiment.py \
     --outfile MixUp_BMM \
     --ni 0.1 \
     --label_noise 0 \
-    --epoch 100 \
+    --epoch 300 \
     --lr 1e-3 \
 
 

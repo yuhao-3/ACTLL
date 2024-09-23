@@ -260,7 +260,7 @@ if __name__ == '__main__':
         
         
         # ucr = ['MIMIC']
-        ucr = ['eICU']
+        ucr = ['MIMIC','eICU',]
         # ucr =  [
         #     # UCR Datasets
         #     "NonInvasiveFetalECGThorax1",

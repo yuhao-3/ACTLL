@@ -7,7 +7,7 @@
 
 ############# Symmetric NOISE #############
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_TimeCNN_BMM_noAug \
     --ni 0.1 \
     --label_noise 0 \
@@ -20,7 +20,7 @@ nohup python src/main.py \
     --corr True \
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_BMM_noAug \
     --ni 0.2 \
     --label_noise 0 \
@@ -34,7 +34,7 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_BMM_noAug \
     --ni 0.3 \
     --label_noise 0 \
@@ -48,7 +48,7 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_BMM_noAug \
     --ni 0.4 \
     --label_noise 0 \
@@ -62,7 +62,7 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_BMM_noAug \
     --ni 0.5 \
     --label_noise 0 \
@@ -80,7 +80,7 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_BMM_noAug \
     --ni 0.1 \
     --label_noise 1 \
@@ -93,7 +93,7 @@ nohup python src/main.py \
     --corr True \
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_BMM_noAug \
     --ni 0.2 \
     --label_noise 1 \
@@ -107,7 +107,7 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_BMM_noAug \
     --ni 0.3 \
     --label_noise 1 \
@@ -123,7 +123,7 @@ nohup python src/main.py \
 ######## INSTANCE DEPENDENT NOISE #############
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_BMM_noAug \
     --ni 0.3 \
     --label_noise -1 \
@@ -136,7 +136,7 @@ nohup python src/main.py \
     --corr True \
 
 nohup python src/main.py \
-    --dataset MIMIC \
+    --dataset Medical \
     --outfile ACTLL_Diff_BMM_noAug \
     --ni 0.4 \
     --label_noise -1 \
