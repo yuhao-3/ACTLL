@@ -12,7 +12,7 @@ nohup python src/main.py \
     --ni 0.1 \
     --label_noise 0 \
     --model dividemix\
-    --epochs 100 \
+    --epochs 300 \
 
 nohup python src/main.py \
     --dataset Medical \
@@ -20,7 +20,7 @@ nohup python src/main.py \
     --ni 0.2 \
     --label_noise 0 \
     --model dividemix\
-    --epochs 100 \
+    --epochs 300 \
 
 
 nohup python src/main.py \
@@ -29,7 +29,7 @@ nohup python src/main.py \
     --ni 0.3 \
     --label_noise 0 \
     --model dividemix\
-    --epochs 100 \
+    --epochs 300 \
 
 
 nohup python src/main.py \
@@ -38,7 +38,7 @@ nohup python src/main.py \
     --ni 0.4 \
     --label_noise 0 \
     --model dividemix \
-    --epochs 100 \
+    --epochs 300 \
 
 
 nohup python src/main.py \
@@ -47,7 +47,7 @@ nohup python src/main.py \
     --ni 0.5 \
     --label_noise 0 \
     --model dividemix\
-    --epochs 100 \
+    --epochs 300 \
 
 
 
@@ -58,7 +58,7 @@ nohup python src/main.py \
     --ni 0.1 \
     --label_noise 1 \
     --model dividemix \
-    --epochs 100 \
+    --epochs 300 \
 
 nohup python src/main.py \
     --dataset Medical \
@@ -66,7 +66,7 @@ nohup python src/main.py \
     --ni 0.2 \
     --label_noise 1 \
     --model dividemix\
-    --epochs 100 \
+    --epochs 300 \
 
 
 nohup python src/main.py \
@@ -75,7 +75,7 @@ nohup python src/main.py \
     --ni 0.3 \
     --label_noise 1 \
     --model dividemix\
-    --epochs 100 \
+    --epochs 300 \
 
 
 ######## INSTANCE DEPENDENT NOISE #############

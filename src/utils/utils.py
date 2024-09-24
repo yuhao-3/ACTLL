@@ -1047,13 +1047,16 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
     labels_numpy = labels.detach().cpu().numpy()
     all_sm_idx = torch.tensor([]).long()
     batch_idx = torch.tensor(np.arange(len(model_loss))).long()
+    less_confident_idxs = torch.tensor([]).long()  # Add this default initialization
+    hard_set_idxs = torch.tensor([]).long()
+    
+    
     indexes = np.array(range(len(loss_mean)))
     
     less_p_threshold = args.less_p_threshold
     rate=(loss_mean<=loss_mean.mean()).mean()
     
     # Default initialization of less_confident_idx
-    less_confident_idxs = torch.tensor([]).long()  # Add this default initialization
 
     for i in range(args.nbins):
         if (labels_numpy==i).sum()>1:
@@ -1124,6 +1127,7 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
             elif args.sel_method==5:
                 clean_labels = []
                 less_confident_labels = []
+                hard_set_labels = []
                 
                 
                 cls_index = indexes[labels_numpy == i]
@@ -1154,20 +1158,7 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
                 p_threshold = mean_clean
                 less_p_threshold = mean_noisy 
                 
-                # For smaller datasets, make mean_clean larger (lenient) and mean_noisy smaller
-                
-                
-                # Elimintating the case when both threshold = 0.5
-                # if p_threshold !=  less_p_threshold:
-                #     sigma_clean, sigma_noisy = bmm.sd_()
-                #     alpha = 0.5
-                #     p_threshold = mean_clean + (alpha * sigma_clean * scaling_factor)  # Increases with smaller datasets
-                #     # less_p_threshold = mean_noisy - (alpha * sigma_noisy * scaling_factor)  # Decreases with smaller datasets
-                    
-                
-                # if len(cls_index) <= 100:
-                #     p_threshold = np.mean(each_label_loss)
-                
+                # For smaller datasets, make mean_clean larger (lenient) and mean_noisy smaller 
                 
                 # Clamp thresholds to valid probability range [0, 1]
                 p_threshold = np.clip(p_threshold, 0, 1)
@@ -1179,7 +1170,10 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
                 
                 # Add less confident index
                 less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if feats[noisy_idx] >= less_p_threshold]
+                
+                hard_set_labels += [hard_idx for hard_idx in range(len(cls_index)) if (feats[hard_idx] > p_threshold and feats[hard_idx] < less_p_threshold)]
 
+                hard_set_idx = torch.tensor(hard_set_labels).long()
                 less_confident_idx = torch.tensor(less_confident_labels).long()
                 model_sm_idx = torch.tensor(clean_labels).long()
             
@@ -1189,16 +1183,19 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
             
             all_sm_idx=torch.concat((all_sm_idx,batch_idx[labels_numpy==i][model_sm_idx]))
             less_confident_idxs = torch.concat((less_confident_idxs,batch_idx[labels_numpy==i][less_confident_idx]))
-        
+            hard_set_idxs = torch.concat((hard_set_idxs,batch_idx[labels_numpy==i][hard_set_idx]))
+            
         elif (labels_numpy==i).sum()==1:
             all_sm_idx=torch.concat((all_sm_idx,batch_idx[labels_numpy==i]))
             less_confident_idxs = torch.concat((less_confident_idxs,batch_idx[labels_numpy==i]))
+            hard_set_idxs = torch.concat((hard_set_idxs,batch_idx[labels_numpy==i]))
     
+    # Calculate L_conf
     model_loss_filter = torch.zeros((model_loss.size(0))).to(device)
     model_loss_filter[all_sm_idx] = 1.0
     model_loss = (model_loss_filter * model_loss).sum()
 
-    return model_loss, all_sm_idx, less_confident_idxs
+    return model_loss, all_sm_idx, hard_set_idxs, less_confident_idxs
 
 def small_loss_criterion_without_EPS(model_loss, rt,loss_all=None,args=None,epoch=None,x_idxs=None,estimate_noise_rate=None):
     '''

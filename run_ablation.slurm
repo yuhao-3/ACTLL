@@ -25,8 +25,6 @@
 # chmod +x run_ablation.sh
 # ./run_ablation.sh
 
-chmod +x run_ablation_BMM.sh
-./run_ablation_BMM.sh
 
 # chmod +x run_ablation_ACTLL_TimeCNN_BMM.sh
 # ./run_ablation_ACTLL_TimeCNN_BMM.sh
@@ -38,9 +36,15 @@ chmod +x run_ablation_BMM.sh
 chmod +x run_ablation_SREA.sh
 ./run_ablation_SREA.sh
 
+chmod +x run_ablation_BMM.sh
+./run_ablation_BMM.sh
 
-# chmod +x run_ablation_dividemix.sh
-# ./run_ablation_dividemix.sh
+
+chmod +x run_ablation_dividemix.sh
+./run_ablation_dividemix.sh
+
+chmod +x run_ablation_coteaching.sh
+./run_ablation_coteaching.sh
 
 # chmod +x run_ablation_ACTLL_Diff_BMM_all.sh
 # ./run_ablation_ACTLL_Diff_BMM.sh

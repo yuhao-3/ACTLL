@@ -9,7 +9,6 @@
 
 
 
-
 # Navigate to the directory containing run_processing.py
 
 
@@ -20,8 +19,8 @@
 
 
 python src/main.py \
-    --dataset Medical\
-    --outfile ACTLL_CNN_BMM_batch256\
+    --dataset Benchmark\
+    --outfile ACTLL_TimeCNN_BMM_batch256_noCORRCLUS\
     --ni 0.1 \
     --label_noise 0 \
     --model ACTLL \
@@ -29,14 +28,16 @@ python src/main.py \
     --batch_size 256\
     --epochs 300 \
     --correct_start 10 \
-    --correct_end 50 \
+    --correct_end 300 \
     --lr 2e-4 \
     --sel_method 5 \
-    --AEChoice CNN\
+    --AEChoice TimeAtteCNN\
     --augment True \
-    --corr True\
+    --corr False\
 
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##
 ##Job monitor command to list the resource usage
+
+
 my-job-stats -a -n -s

@@ -287,13 +287,13 @@ def train_model(model, train_data, epochs, correct, args, saver=None, plot_loss_
             all_raw_data = np.concatenate(all_raw_data)
 
 
-            indices, accuracy = mine_nearest_neighbors(features=all_data.astype(np.float32), real_label=all_label, topk=20,
-                                                       calculate_accuracy=True)
-            if idx_epoch == 1:
-                indices, l_accuracy = mine_nearest_neighbors(features=all_raw_data.astype(np.float32), real_label=all_label,
-                                                           topk=20,
-                                                           calculate_accuracy=True)
-                all_knn_low_acc.append(round(l_accuracy, 4))
+            # indices, accuracy = mine_nearest_neighbors(features=all_data.astype(np.float32), real_label=all_label, topk=20,
+            #                                            calculate_accuracy=True)
+            # if idx_epoch == 1:
+            #     indices, l_accuracy = mine_nearest_neighbors(features=all_raw_data.astype(np.float32), real_label=all_label,
+            #                                                topk=20,
+            #                                                calculate_accuracy=True)
+            #     all_knn_low_acc.append(round(l_accuracy, 4))
             all_knn_low_acc.append(round(accuracy, 4))
 
 

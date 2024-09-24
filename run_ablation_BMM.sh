@@ -5,14 +5,14 @@
 # --label_noise 1: asymmetric noise
 # --label_noise -1: instance-depended noise
 
-############# Symmetric NOISE #############
+# ############# Symmetric NOISE #############
 nohup python src/BMM_single_experiment.py \
     --dataset Medical \
     --outfile MixUp_BMM \
     --ni 0.1 \
     --label_noise 0 \
     --epoch 300 \
-    --lr 1e-4 \
+    --lr 1e-3 \
 
 nohup python src/BMM_single_experiment.py \
     --dataset Medical \
@@ -20,7 +20,7 @@ nohup python src/BMM_single_experiment.py \
     --ni 0.2 \
     --label_noise 0 \
     --epoch 300 \
-    --lr 1e-4 \
+    --lr 1e-3 \
 
 
 nohup python src/BMM_single_experiment.py \
@@ -29,7 +29,7 @@ nohup python src/BMM_single_experiment.py \
     --ni 0.3 \
     --label_noise 0 \
     --epoch 300 \
-    --lr 1e-4 \
+    --lr 1e-3 \
 
 
 nohup python src/BMM_single_experiment.py \
@@ -38,7 +38,7 @@ nohup python src/BMM_single_experiment.py \
     --ni 0.4 \
     --label_noise 0 \
     --epoch 300 \
-    --lr 1e-4 \
+    --lr 1e-3 \
 
 
 nohup python src/BMM_single_experiment.py \
@@ -47,7 +47,7 @@ nohup python src/BMM_single_experiment.py \
     --ni 0.5 \
     --label_noise 0 \
     --epoch 300 \
-    --lr 1e-4 \
+    --lr 1e-3 \
 
 
 
@@ -58,7 +58,7 @@ nohup python src/BMM_single_experiment.py \
     --ni 0.1 \
     --label_noise 1 \
     --epoch 300 \
-    --lr 1e-4 \
+    --lr 1e-3 \
 
 nohup python src/BMM_single_experiment.py \
     --dataset Medical \
@@ -66,7 +66,7 @@ nohup python src/BMM_single_experiment.py \
     --ni 0.2 \
     --label_noise 1 \
     --epoch 300 \
-    --lr 1e-4 \
+    --lr 1e-3 \
 
 
 nohup python src/BMM_single_experiment.py \
@@ -75,10 +75,10 @@ nohup python src/BMM_single_experiment.py \
     --ni 0.3 \
     --label_noise 1 \
     --epoch 300 \
-    --lr 1e-4 \
+    --lr 1e-3 \
 
 
-# ######## INSTANCE DEPENDENT NOISE #############
+# # ######## INSTANCE DEPENDENT NOISE #############
 
 nohup python src/BMM_single_experiment.py \
     --dataset Medical \
@@ -86,7 +86,7 @@ nohup python src/BMM_single_experiment.py \
     --ni 0.3 \
     --label_noise -1 \
     --epoch 300 \
-    --lr 1e-4 \
+    --lr 1e-3 \
 
 
 nohup python src/BMM_single_experiment.py \
@@ -95,7 +95,7 @@ nohup python src/BMM_single_experiment.py \
     --ni 0.4 \
     --label_noise -1 \
     --epoch 300 \
-    --lr 1e-4 \
+    --lr 1e-3 \
 # ###########################################################################################################
 
 

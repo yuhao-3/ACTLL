@@ -83,6 +83,7 @@ def parse_args():
     parser.add_argument('--AEChoice',choices=['CNN','Diffusion','AttentionDiffusion','TimeAtteCNN','Transformer','Inception'],
                         default='Diffusion', help = 'Choose encoder architecture')
     parser.add_argument('--augment',default = 'True')
+    parser.add_argument('--hard',default = 'True')
     parser.add_argument('--corr', default = 'True')
 
 
@@ -176,7 +177,7 @@ def parse_args():
                         help='the coefficient of L_clus')
     parser.add_argument('--L_cor_coef', type=float, default=1,
                         help='the coefficient of L_corr')
-    parser.add_argument('--L_p_coef', type=float, default=0.01,
+    parser.add_argument('--L_p_coef', type=float, default=1,
                         help='the coefficient of L_p')
     parser.add_argument('--L_e_coef', type=float, default=0.01,
                         help='the coefficient of L_e')

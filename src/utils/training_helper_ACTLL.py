@@ -694,15 +694,15 @@ def train_step_ACTLL(data_loader, model, loss_centroids, optimizer, criterion, y
         ################# L_CONF ######################
         
         if args.sel_method == 5: # BMM
-            L_conf, model_sel_idx, less_confident_idxs = select_class_by_class(model_loss = loss, loss_all=loss_all, labels=y_hat, p_threshold=args.p_threshold,
+            L_conf, model_sel_idx, hard_set_idxs, less_confident_idxs = select_class_by_class(model_loss = loss, loss_all=loss_all, labels=y_hat, p_threshold=args.p_threshold,
                                                                 args=args,
                                                                 epoch=epoch, x_idxs=x_idx)
         elif args.sel_method == 2: # GMM
-            L_conf, model_sel_idx, less_confident_idxs = select_class_by_class(model_loss = loss, loss_all=loss_all, labels=y_hat, p_threshold=args.p_threshold,
+            L_conf, model_sel_idx, hard_set_idxs,less_confident_idxs = select_class_by_class(model_loss = loss, loss_all=loss_all, labels=y_hat, p_threshold=args.p_threshold,
                                                                 args=args,
                                                                 epoch=epoch, x_idxs=x_idx)
         else:
-            L_conf, model_sel_idx, less_confident_idxs = small_loss_criterion_EPS(
+            L_conf, model_sel_idx, hard_set_idxs, less_confident_idxs = small_loss_criterion_EPS(
                 model_loss=loss,
                 loss_all=loss_all,
                 args=args,
@@ -741,8 +741,7 @@ def train_step_ACTLL(data_loader, model, loss_centroids, optimizer, criterion, y
             aug_step = 1 # prevent zero division
             avg_accuracy_aug = 0.
             
-            
-            
+        
         alpha_, beta_, gamma_, epsilon_, rho_ = alpha, beta, gamma, epsilon, rho
 
         ################## L_CORR + DATA CORRECTION FOR LESS CONFIDENT EXAMPLES ##############
@@ -770,14 +769,15 @@ def train_step_ACTLL(data_loader, model, loss_centroids, optimizer, criterion, y
             y_corrected = y_hat.clone()
             y_corrected[less_confident_idxs] = corrected_labels[less_confident_idxs]
             L_corr = criterion(out[less_confident_idxs], y_corrected[less_confident_idxs]).mean()
+            clustering_loss = loss_centroids(h.squeeze(-1), y_hat).mean()    
         
         
         else:
-            L_corr = 0
+            clustering_loss = torch.tensor(0)
+            L_corr = torch.tensor(0)
         
         # Calculating Clustering Module Loss
-        clustering_loss = loss_centroids(h.squeeze(-1), y_hat).mean()    
-        
+
         L_p = -torch.sum(torch.log(prob_avg) * p)  # Distribution regularization
         L_e = -torch.mean(torch.sum(prob * F.log_softmax(out, dim=1), dim=1))  # Entropy regularization
         
@@ -794,6 +794,7 @@ def train_step_ACTLL(data_loader, model, loss_centroids, optimizer, criterion, y
 
         model_loss = L_conf + args.L_aug_coef * aug_model_loss + args.L_rec_coef * recon_loss + \
              gamma_ * clustering_loss + beta_ * L_corr + rho_ * L_p + epsilon_ * L_e
+        
         # model_loss = L_conf  + args.L_rec_coef * recon_loss + 1 * clustering_loss + 1* L_corr + 1*L_p + 1* L_e
            
         # Loss exchange
