@@ -1158,12 +1158,16 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
                 
                 
                 # Elimintating the case when both threshold = 0.5
-                if p_threshold !=  less_p_threshold:
-                    sigma_clean, sigma_noisy = bmm.sd_()
-                    alpha = 0.5
-                    p_threshold = mean_clean + (alpha * sigma_clean * scaling_factor)  # Increases with smaller datasets
-                    less_p_threshold = mean_noisy - (alpha * sigma_noisy * scaling_factor)  # Decreases with smaller datasets
+                # if p_threshold !=  less_p_threshold:
+                #     sigma_clean, sigma_noisy = bmm.sd_()
+                #     alpha = 0.5
+                #     p_threshold = mean_clean + (alpha * sigma_clean * scaling_factor)  # Increases with smaller datasets
+                #     # less_p_threshold = mean_noisy - (alpha * sigma_noisy * scaling_factor)  # Decreases with smaller datasets
                     
+                
+                # if len(cls_index) <= 100:
+                #     p_threshold = np.mean(each_label_loss)
+                
                 
                 # Clamp thresholds to valid probability range [0, 1]
                 p_threshold = np.clip(p_threshold, 0, 1)

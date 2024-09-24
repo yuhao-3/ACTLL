@@ -21,16 +21,18 @@
 
 python src/main.py \
     --dataset Medical\
-    --outfile ACTLL_TimeCNN_batch256_FFT\
+    --outfile ACTLL_CNN_BMM_batch256\
     --ni 0.1 \
     --label_noise 0 \
     --model ACTLL \
     --modelloss CrossEntropy \
     --batch_size 256\
     --epochs 300 \
+    --correct_start 10 \
+    --correct_end 50 \
     --lr 2e-4 \
     --sel_method 5 \
-    --AEChoice TimeAtteCNN\
+    --AEChoice CNN\
     --augment True \
     --corr True\
 

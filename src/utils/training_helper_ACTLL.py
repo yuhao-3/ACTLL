@@ -716,11 +716,11 @@ def train_step_ACTLL(data_loader, model, loss_centroids, optimizer, criterion, y
         # ################# L_AUG #######################
         # Data Augmentation after selecting clean samples
         if (batch_idx % args.arg_interval == 0) and len(model_sel_idx) != 1 and args.augment == True:
-            # x_aug = torch.from_numpy(
-            #     tsaug.TimeWarp(n_speed_change=5, max_speed_ratio=3).augment(
-            #         x[model_sel_idx].cpu().numpy())).float().to(device)
+            x_aug = torch.from_numpy(
+                tsaug.TimeWarp(n_speed_change=5, max_speed_ratio=3).augment(
+                    x[model_sel_idx].cpu().numpy())).float().to(device)
             
-            x_aug = fft_augmentation(x[model_sel_idx])
+            # x_aug = fft_augmentation(x[model_sel_idx])
             
             aug_step += 1
             if len(x_aug) == 1:  # Avoid bugs
