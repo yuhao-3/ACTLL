@@ -745,7 +745,7 @@ def train_step_ACTLL(data_loader, model, loss_centroids, optimizer, criterion, y
         alpha_, beta_, gamma_, epsilon_, rho_ = alpha, beta, gamma, epsilon, rho
 
         ################## L_CORR + DATA CORRECTION FOR LESS CONFIDENT EXAMPLES ##############
-        if len(less_confident_idxs) > 0 and args.corr == True:
+        if len(less_confident_idxs) > 0 and args.corr:
             w_yhat = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=0, high_val=1 * beta)  # Pred
             w_c = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=0, high_val=1 * gamma)  # Centers
             w_obs = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=1, high_val=0)  # Observed
@@ -778,6 +778,7 @@ def train_step_ACTLL(data_loader, model, loss_centroids, optimizer, criterion, y
         
         # Calculating Clustering Module Loss
 
+        
         L_p = -torch.sum(torch.log(prob_avg) * p)  # Distribution regularization
         L_e = -torch.mean(torch.sum(prob * F.log_softmax(out, dim=1), dim=1))  # Entropy regularization
         

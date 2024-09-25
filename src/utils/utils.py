@@ -1052,11 +1052,10 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
     
     
     indexes = np.array(range(len(loss_mean)))
-    
     less_p_threshold = args.less_p_threshold
     rate=(loss_mean<=loss_mean.mean()).mean()
     
-    # Default initialization of less_confident_idx
+    hard_set_probs = torch.tensor([]).long()
 
     for i in range(args.nbins):
         if (labels_numpy==i).sum()>1:
@@ -1090,9 +1089,10 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
                 
                 less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if prob[noisy_idx] <= less_p_threshold]
                 less_confident_idx = torch.tensor(less_confident_labels).long()
-                # less_confident_idx = torch.tensor([])
+            
             
             ## Adaptive threshold
+            
             elif args.sel_method==6:
                 ####################### ADAPTIVE THRESHOLD #################################
                 clean_labels = []
@@ -1107,6 +1107,7 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
                 # Compute mean and standard deviation for the current class
                 class_mean = torch.mean(class_losses).item()
                 class_std = torch.std(class_losses).item()
+                
 
                 # Calculate the threshold: lambda = mu + sigma
                 threshold = class_mean + class_std
@@ -1123,6 +1124,7 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
                 model_sm_idx = torch.tensor(clean_labels).long()
                 less_confident_idx = torch.tensor(less_confident_labels).long()
 
+        
         
             elif args.sel_method==5:
                 clean_labels = []
@@ -1154,7 +1156,6 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
                 
                 
                 # Dynamic thresholds
-                scaling_factor = calculate_scaling_factor(len(cls_index))
                 p_threshold = mean_clean
                 less_p_threshold = mean_noisy 
                 
@@ -1171,31 +1172,46 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
                 # Add less confident index
                 less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if feats[noisy_idx] >= less_p_threshold]
                 
+                # Add Hard Set Index
                 hard_set_labels += [hard_idx for hard_idx in range(len(cls_index)) if (feats[hard_idx] > p_threshold and feats[hard_idx] < less_p_threshold)]
 
+
+
+                # Convert the selected hard set probabilities to a tensor
+                selected_probs = torch.tensor([prob[hard_idx] for hard_idx in range(len(cls_index)) \
+                                               if (feats[hard_idx] > p_threshold and feats[hard_idx] < less_p_threshold)], device= hard_set_probs.device)
+
+                
                 hard_set_idx = torch.tensor(hard_set_labels).long()
                 less_confident_idx = torch.tensor(less_confident_labels).long()
                 model_sm_idx = torch.tensor(clean_labels).long()
+                
             
             else:
                 _, model_sm_idx = torch.topk(torch.from_numpy(each_label_loss), k=int(each_label_loss.size*rate), largest=False)
+                
                 _, less_confident_idx = torch.topk(torch.from_numpy(each_label_loss), k=int(each_label_loss.size*rate), largest=True)
             
             all_sm_idx=torch.concat((all_sm_idx,batch_idx[labels_numpy==i][model_sm_idx]))
             less_confident_idxs = torch.concat((less_confident_idxs,batch_idx[labels_numpy==i][less_confident_idx]))
             hard_set_idxs = torch.concat((hard_set_idxs,batch_idx[labels_numpy==i][hard_set_idx]))
             
+            
+            # Concatenate the new probabilities with the existing tensor
+            hard_set_probs = torch.cat((hard_set_probs, selected_probs))
+            
         elif (labels_numpy==i).sum()==1:
             all_sm_idx=torch.concat((all_sm_idx,batch_idx[labels_numpy==i]))
             less_confident_idxs = torch.concat((less_confident_idxs,batch_idx[labels_numpy==i]))
-            hard_set_idxs = torch.concat((hard_set_idxs,batch_idx[labels_numpy==i]))
+            
     
     # Calculate L_conf
+    
     model_loss_filter = torch.zeros((model_loss.size(0))).to(device)
     model_loss_filter[all_sm_idx] = 1.0
-    model_loss = (model_loss_filter * model_loss).sum()
+    model_loss = (model_loss_filter * model_loss).mean()
 
-    return model_loss, all_sm_idx, hard_set_idxs, less_confident_idxs
+    return model_loss, all_sm_idx, hard_set_idxs, less_confident_idxs, hard_set_probs.to(device)
 
 def small_loss_criterion_without_EPS(model_loss, rt,loss_all=None,args=None,epoch=None,x_idxs=None,estimate_noise_rate=None):
     '''

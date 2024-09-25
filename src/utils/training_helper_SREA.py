@@ -19,7 +19,7 @@ from tqdm import tqdm
 from sklearn.metrics import accuracy_score, f1_score
 from scipy.special import softmax
 
-from src.env_test.knn_utils import mine_nearest_neighbors, plt_knn_acc
+# from src.env_test.knn_utils import mine_nearest_neighbors, plt_knn_acc
 from src.models.MultiTaskClassification import AEandClass, NonLinClassifier
 from src.models.model import CNNAE
 from src.utils.log_utils import StreamToLogger

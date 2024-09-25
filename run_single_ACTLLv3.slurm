@@ -19,20 +19,25 @@
 
 
 python src/main.py \
-    --dataset Benchmark\
-    --outfile ACTLL_TimeCNNv3_BMM_batch256\
+    --dataset Medical\
+    --outfile ACTLL_TimeCNNv3_batch256_corrstart200\
     --ni 0.1 \
     --label_noise 0 \
     --model ACTLLv3 \
     --modelloss CrossEntropy \
     --batch_size 256\
     --epochs 300 \
+    --correct_start 200 \
     --lr 2e-4 \
     --sel_method 5 \
     --AEChoice TimeAtteCNN\
     --augment True \
     --hard True\
     --corr True\
+    --warmup 20\
+    --L_aug_coef 1 \
+    --L_rec_coef 1 \
+    --L_p_coef 0.1\
 
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##

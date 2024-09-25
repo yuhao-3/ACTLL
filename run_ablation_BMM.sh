@@ -6,30 +6,30 @@
 # --label_noise -1: instance-depended noise
 
 # ############# Symmetric NOISE #############
-nohup python src/BMM_single_experiment.py \
-    --dataset Medical \
-    --outfile MixUp_BMM \
-    --ni 0.1 \
-    --label_noise 0 \
-    --epoch 300 \
-    --lr 1e-3 \
+# nohup python src/BMM_single_experiment.py \
+#     --dataset Medical \
+#     --outfile MixUp_BMM \
+#     --ni 0.1 \
+#     --label_noise 0 \
+#     --epoch 300 \
+#     --lr 1e-3 \
 
-nohup python src/BMM_single_experiment.py \
-    --dataset Medical \
-    --outfile MixUp_BMM \
-    --ni 0.2 \
-    --label_noise 0 \
-    --epoch 300 \
-    --lr 1e-3 \
+# nohup python src/BMM_single_experiment.py \
+#     --dataset Medical \
+#     --outfile MixUp_BMM \
+#     --ni 0.2 \
+#     --label_noise 0 \
+#     --epoch 300 \
+#     --lr 1e-3 \
 
 
-nohup python src/BMM_single_experiment.py \
-    --dataset Medical \
-    --outfile MixUp_BMM \
-    --ni 0.3 \
-    --label_noise 0 \
-    --epoch 300 \
-    --lr 1e-3 \
+# nohup python src/BMM_single_experiment.py \
+#     --dataset Medical \
+#     --outfile MixUp_BMM \
+#     --ni 0.3 \
+#     --label_noise 0 \
+#     --epoch 300 \
+#     --lr 1e-3 \
 
 
 nohup python src/BMM_single_experiment.py \

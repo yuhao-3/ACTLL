@@ -12,7 +12,7 @@ nohup python src/SREA_single_experiment.py \
     --ni 0.1 \
     --label_noise 0 \
     --epochs 300 \
-    --lr 1e-3 \
+    --learning_rate 1e-3 \
 
 nohup python src/SREA_single_experiment.py \
     --dataset Medical \
@@ -20,7 +20,7 @@ nohup python src/SREA_single_experiment.py \
     --ni 0.2 \
     --label_noise 0 \
     --epochs 300 \
-    --lr 1e-3 \
+    --learning_rate 1e-3 \
 
 
 nohup python src/SREA_single_experiment.py \
@@ -29,7 +29,7 @@ nohup python src/SREA_single_experiment.py \
     --ni 0.3 \
     --label_noise 0 \
     --epochs 300 \
-    --lr 1e-3 \
+    --learning_rate 1e-3 \
 
 
 nohup python src/SREA_single_experiment.py \
@@ -38,7 +38,7 @@ nohup python src/SREA_single_experiment.py \
     --ni 0.4 \
     --label_noise 0 \
     --epochs 300 \
-    --lr 1e-3 \
+    --learning_rate 1e-3 \
 
 
 nohup python src/SREA_single_experiment.py \
@@ -47,7 +47,7 @@ nohup python src/SREA_single_experiment.py \
     --ni 0.5 \
     --label_noise 0 \
     --epochs 300 \
-    --lr 1e-3 \
+    --learning_rate 1e-3 \
 
 
 
@@ -58,7 +58,7 @@ nohup python src/SREA_single_experiment.py \
     --ni 0.1 \
     --label_noise 1 \
     --epochs 300 \
-    --lr 1e-3 \
+    --learning_rate 1e-3 \
 
 nohup python src/SREA_single_experiment.py \
     --dataset Medical \
@@ -66,7 +66,7 @@ nohup python src/SREA_single_experiment.py \
     --ni 0.2 \
     --label_noise 1 \
     --epochs 300 \
-    --lr 1e-3 \
+    --learning_rate 1e-3 \
 
 
 nohup python src/SREA_single_experiment.py \
@@ -75,7 +75,7 @@ nohup python src/SREA_single_experiment.py \
     --ni 0.3 \
     --label_noise 1 \
     --epochs 300 \
-    --lr 1e-3 \
+    --learning_rate 1e-3 \
 
 
 ######## INSTANCE DEPENDENT NOISE #############
@@ -86,7 +86,7 @@ nohup python src/SREA_single_experiment.py \
     --ni 0.3 \
     --label_noise -1 \
     --epochs 300 \
-    --lr 1e-3 \
+    --learning_rate 1e-3 \
 
 
 nohup python src/SREA_single_experiment.py \
@@ -95,7 +95,7 @@ nohup python src/SREA_single_experiment.py \
     --ni 0.4 \
     --label_noise -1 \
     --epochs 300 \
-    --lr 1e-3 \
+    --learning_rate 1e-3 \
 ###########################################################################################################
 
 

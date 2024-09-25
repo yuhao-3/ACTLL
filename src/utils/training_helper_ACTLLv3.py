@@ -169,40 +169,6 @@ def test_step(data_loader, model,model2=None):
     return accuracy, f1_weighted
 
 
-
-def initialize_Cluster(data_loader, kmeans, loss_centroids, model,optimizer,criterion, epoch, 
-                       loss_all,args):
-
-    # KMeans after the first milestone - Training WarmUp
-    # Init cluster centers with KMeans
-    embedding = []
-    targets = []
-    with torch.no_grad():
-        model.eval()
-        loss_centroids.eval()
-        for batch_idx,(data, target, _ ,_) in enumerate(data_loader):
-            data = data.to(device)
-            output = model.encoder(data)
-            embedding.append(output.squeeze(-1).cpu().numpy())
-            targets.append(target.numpy())
-    embedding = np.concatenate(embedding, axis=0)
-
-    targets = np.concatenate(targets, axis=0)
-    predicted = kmeans.fit_predict(embedding)
-    reassignment, accuracy = cluster_accuracy(targets, predicted)
-    # predicted_ordered = np.array(list(map(lambda x: reassignment[x], predicted)))
-    # Center reordering. Swap keys and values and sort by keys.
-    cluster_centers = kmeans.cluster_centers_[
-        list(dict(sorted({y: x for x, y in reassignment.items()}.items())).values())]
-    cluster_centers = torch.tensor(cluster_centers, dtype=torch.float, requires_grad=True).to(device)
-    with torch.no_grad():
-        # initialise the cluster centers
-        loss_centroids.state_dict()["centers"].copy_(cluster_centers)
-        
-        
-    return embedding, cluster_centers, loss_centroids
-
-
 def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=None):
     
     
@@ -517,23 +483,10 @@ def plot_train_loss_and_test_acc(avg_train_losses,test_acc_list,args,pred_precis
 def warmup_ACTLL(data_loader, model, kmeans, loss_centroids, yhat_hist, optimizer, criterion,epoch=None,
                          loss_all=None,args=None):
     
-    
-    # INITIALIZE KMEANS FOR THE FIRST EPOCH
-    if epoch == args.init_centers:
-        embedding, cluster_centers, loss_centroids = initialize_Cluster(data_loader=data_loader,kmeans = kmeans, 
-                                                                 loss_centroids= loss_centroids,
-                                                                 model=model,optimizer=optimizer,
-                                                                 criterion=criterion,
-                                                                 epoch=0,
-                                                                 loss_all=loss_all,
-                                                                 args=args)    
-
-
     global_step = 0
     avg_accuracy = 0.
     avg_loss = 0.
     model = model.train()
-    loss_centroids.train()
     
     
 
@@ -640,6 +593,81 @@ def label_correction(embedding, centers, y_obs, yhat_hist, w_yhat, w_c, w_obs, c
 
 
 
+def hard_set_loss(hard_set_probs, y_hat, y_pred, out):
+    """
+    Compute the hard set loss using a weighted combination of noisy labels and model predictions.
+    
+    Args:
+    - hard_set_probs (torch.Tensor): Confidence scores (weights) for each hard sample (w_i).
+    - y_hat (torch.Tensor): Noisy labels (y_i) for the hard samples.
+    - y_pred (torch.Tensor): Model's predicted labels (z_i) for the hard samples.
+    - out (torch.Tensor): Model's output logits or probabilities (h_i).
+    
+    Returns:
+    - loss (torch.Tensor): Computed loss for the hard set.
+    """
+    
+    # Convert model logits to probabilities using softmax
+    
+    hard_set_probs = hard_set_probs.to(device)
+    y_hat = y_hat.to(device)
+    y_pred = y_pred.to(device)
+    out = out.to(device)
+    
+    # Convert logits to log probabilities
+    log_h = F.log_softmax(out, dim=1)  # log(h_i)
+
+    # Create one-hot encodings for the labels
+    y_one_hot = F.one_hot(y_hat, num_classes=out.size(1)).float()  # y_i
+    z_one_hot = F.one_hot(y_pred, num_classes=out.size(1)).float()  # z_i
+    
+
+    # Compute the weighted combination of noisy labels and predicted labels
+    weighted_labels = (1 - hard_set_probs)[:, None] * y_one_hot + hard_set_probs[:, None] * z_one_hot
+
+    # Compute the loss
+    loss = -torch.sum(weighted_labels * log_h, dim=1).mean()
+
+    return loss
+
+
+
+
+def temperature_scaled_coefficients(epoch, start_epoch=100, total_epochs=300, T_corr=10.0, T_hard=10.0, k=0.1, max_corr=1.0, max_hard=1.0):
+    """
+    Temperature scaling for L_corr and L_hard coefficients.
+    Coefficients increase gradually from start_epoch to total_epochs.
+    :param epoch: Current epoch
+    :param start_epoch: When to start increasing L_corr and L_hard
+    :param total_epochs: Maximum number of epochs
+    :param T_corr: Initial temperature for L_corr scaling
+    :param T_hard: Initial temperature for L_hard scaling
+    :param k: Steepness of the curve
+    :param max_corr: Maximum value for L_corr coefficient
+    :param max_hard: Maximum value for L_hard coefficient
+    :return: Scaled coefficients for L_corr and L_hard
+    """
+    
+    # Only start increasing the coefficients after the start_epoch
+    if epoch < start_epoch:
+        return 0.0, 0.0
+    
+    # Adjust temperature scaling based on the current epoch relative to the range from start_epoch to total_epochs
+    epoch_in_range = epoch - start_epoch
+    total_epochs_in_range = total_epochs - start_epoch
+    
+    # Exponential decay for T_corr and T_hard starting at start_epoch
+    lambda_corr = max_corr / (1 + np.exp(-k * (epoch_in_range - T_corr)))
+    lambda_hard = max_hard / (1 + np.exp(-k * (epoch_in_range - T_hard)))
+    
+    return lambda_corr, lambda_hard
+
+
+
+
+
+
+
 def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion, yhat_hist, loss_all=None, epoch=0, args=None, sel_dict=None):
     
     global_step = 0
@@ -650,11 +678,12 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
     model = model.train()
     confident_set_id = np.array([])
     classes = args.nbins
+    p = torch.ones(classes).to(device) / classes
+    
+    
     
     
     for batch_idx, (x, y_hat, x_idx, _) in enumerate(data_loader):
-        
-        
         # Forward and Backward propagation
         x, y_hat = x.to(device), y_hat.to(device)
         y = y_hat
@@ -670,22 +699,24 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
         prob_avg = torch.mean(prob, dim=0)
 
         loss = criterion(out, y_hat)
+        
+        y_pred = torch.argmax(prob, dim=1).to(device)
 
         if loss_all is not None:
             loss_all[x_idx, epoch] = loss.data.detach().clone().cpu().numpy()
 
-        ################# L_CONF ######################
-        
+
+        ################################# L_CONF ######################
         if args.sel_method == 5: # BMM
-            L_conf, model_sel_idx, hard_set_idxs, less_confident_idxs = select_class_by_class(model_loss = loss, loss_all=loss_all, labels=y_hat, p_threshold=args.p_threshold,
+            L_conf, model_sel_idx, hard_set_idxs, less_confident_idxs, hard_set_probs = select_class_by_class(model_loss = loss, loss_all=loss_all, labels=y_hat, p_threshold=args.p_threshold,
                                                                 args=args,
                                                                 epoch=epoch, x_idxs=x_idx)
         elif args.sel_method == 2: # GMM
-            L_conf, model_sel_idx, hard_set_idxs, less_confident_idxs = select_class_by_class(model_loss = loss, loss_all=loss_all, labels=y_hat, p_threshold=args.p_threshold,
+            L_conf, model_sel_idx, hard_set_idxs, less_confident_idxs,hard_set_probs = select_class_by_class(model_loss = loss, loss_all=loss_all, labels=y_hat, p_threshold=args.p_threshold,
                                                                 args=args,
                                                                 epoch=epoch, x_idxs=x_idx)
         else:
-            L_conf, model_sel_idx, hard_set_idxs, less_confident_idxs = small_loss_criterion_EPS(
+            L_conf, model_sel_idx, less_confident_idxs = small_loss_criterion_EPS(
                 model_loss=loss,
                 loss_all=loss_all,
                 args=args,
@@ -695,12 +726,12 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
             )    
     
         
-        ################# L_aug #####################################
-        if (batch_idx % args.arg_interval == 0) and len(model_sel_idx) != 1 and args.augment == True:
+        ################################# L_aug #####################################
+        if (batch_idx % args.arg_interval == 0) and len(model_sel_idx) > 0 and args.augment:
             x_aug = torch.from_numpy(
                 tsaug.TimeWarp(n_speed_change=5, max_speed_ratio=3).augment(
                     x[model_sel_idx].cpu().numpy())).float().to(device)
-
+            
             aug_step += 1
             if len(x_aug) == 1:  # Avoid bugs
                 aug_model_loss = torch.tensor(0.)
@@ -709,7 +740,7 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
                 aug_h = model.encoder(x_aug)
                 outx_aug = model.classifier(aug_h.squeeze(-1))
                 y_hat_aug = y_hat[model_sel_idx]
-                aug_model_loss = criterion(outx_aug, y_hat_aug).mean_loss_len()
+                aug_model_loss = criterion(outx_aug, y_hat[model_sel_idx]).sum()
                 avg_accuracy_aug += torch.eq(torch.argmax(outx_aug, 1), y_hat_aug).float().sum().cpu().numpy()
 
             if epoch == args.epochs - 1 or epoch in args.tsne_epochs:
@@ -721,34 +752,50 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
             avg_accuracy_aug = 0.
         
         
-        ################## L_HARD + DATA CORRECTION FOR HARD EXAMPLES ##############
-        if len(hard_set_idxs) > 0 and args.hard == True:
-            L_hard = criterion(out[hard_set_idxs], y_hat[hard_set_idxs]).mean()
+        ####################### L_HARD + DATA CORRECTION FOR HARD EXAMPLES ##############
+        if len(hard_set_idxs) > 0 and args.hard:
+    
+            # Compute L_hard using a weighted combination of noisy labels and model's predicted labels
+            L_hard = hard_set_loss(hard_set_probs, y_hat[hard_set_idxs], y_pred[hard_set_idxs], out[hard_set_idxs])
         else:
             L_hard = torch.tensor(0)
             
         
-            
         ################## L_corr: Using Model Prediction Directly
-        if len(less_confident_idxs) > 0 and args.corr == True:
+        if len(less_confident_idxs) > 0 and args.corr:
             soft_targets = prob[less_confident_idxs].detach()  # Detach soft targets to prevent gradient backprop
-            L_corr = F.kl_div(F.log_softmax(y_hat[less_confident_idxs], dim=-1), soft_targets, reduction='batchmean')
+            # Assuming y_hat contains class indices, convert it to one-hot vectors with the same number of classes as soft_targets
+            num_classes = soft_targets.size(1)  # Assuming soft_targets has the correct number of classes
 
-            L_corr = criterion(out[less_confident_idxs], y_hat[less_confident_idxs]).mean()
+            # One-hot encode y_hat[less_confident_idxs] to match the dimensionality of soft_targets
+            y_hat_one_hot = F.one_hot(y_hat[less_confident_idxs], num_classes=num_classes).float()
+
+            # Now apply the KL divergence with the same shapes
+            L_corr = F.kl_div(F.log_softmax(y_hat_one_hot, dim=-1), soft_targets, reduction='batchmean').mean()
         else:
             L_corr = torch.tensor(0)
-        
+            
+            
     
-        # Calculating Clustering Module Loss
         # Clamping to avoid extreme values
-        
         recon_loss = torch.clamp(recon_loss, min=1e-8, max=1e8)
-        
         L_p = -torch.sum(torch.log(prob_avg) * p)  # Distribution regularization
         
-        model_loss = 1 * L_conf + args.L_rec_coef * recon_loss \
-                    + 0.5 * L_hard + 0.1 * L_corr \
-                    + args.L_aug_coef * aug_model_loss + args.L_p_coef * L_p
+        # args.L_p_coef * L_p
+        
+        
+        
+        lambda_corr, lambda_hard = temperature_scaled_coefficients(epoch, start_epoch=args.correct_start, total_epochs=args.epochs)
+        
+        model_loss =  L_conf + args.L_rec_coef * recon_loss \
+                    + lambda_hard * L_hard + lambda_corr * L_corr \
+                    + args.L_aug_coef * aug_model_loss
+        
+        
+        # print(f"Batch {batch_idx + 1} | L_conf: {L_conf.item():.4f} | L_aug: {aug_model_loss.item():.4f} | L_rec: {recon_loss.item():.4f}")
+        # print(f"L_corr: {L_corr.item():.4f} | L_hard: {L_hard.item():.4f} | L_p: {L_p.item():.4f}")
+
+        # print(f"model_loss {model_loss.item():.4f}")
         
         # Loss exchange
         optimizer.zero_grad()

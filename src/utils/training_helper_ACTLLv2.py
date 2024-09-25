@@ -944,7 +944,7 @@ def train_step_ACTLLv2(data_loader, model, loss_centroids, optimizer, criterion,
             
             w_yhat = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=0, high_val=1 * beta)  # Pred
             w_c = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=0, high_val=1 * gamma)  # Centers
-            w_obs = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=1, high_val=0)  # Observed
+            w_obs = temperature(epoch, th_low=init_centers - history_track, th_high=correct_end, low_val=0, high_val=1)  # Observed
             
             beta_ = temperature(epoch, th_low=init_centers - history_track, th_high=correct_start,
                                 low_val=0, high_val=beta)  # Class
