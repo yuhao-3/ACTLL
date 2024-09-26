@@ -19,16 +19,16 @@
 
 
 python src/main.py \
-    --dataset Medical\
-    --outfile ACTLL_TimeCNNv3_batch256_corrstart200\
-    --ni 0.1 \
+    --dataset Benchmark\
+    --outfile ACTLL_TimeAtteCNNv3_batch256_corrstart200_schedu_noSpectREAL\
+    --ni 0.3 \
     --label_noise 0 \
     --model ACTLLv3 \
     --modelloss CrossEntropy \
     --batch_size 256\
     --epochs 300 \
     --correct_start 200 \
-    --lr 2e-4 \
+    --lr 2e-3 \
     --sel_method 5 \
     --AEChoice TimeAtteCNN\
     --augment True \

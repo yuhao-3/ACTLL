@@ -22,7 +22,7 @@ from src.models.model import CNNAE, DiffusionAE, AttenDiffusionAE, TimeAttention
 from src.utils.saver import Saver
 from src.utils.utils import readable, reset_seed_, reset_model, flip_label, remove_empty_dirs, \
     evaluate_class, to_one_hot,small_loss_criterion_EPS, select_class_by_class, FocalLoss, CentroidLoss, reduce_loss, cluster_accuracy
-from src.utils.loss import ActivePassiveLoss
+from sklearn.cluster import KMeans
 
 from src.plot.visualization import t_sne,t_sne_during_train
 
@@ -183,6 +183,11 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
     optimizer = torch.optim.Adam(
         list(filter(lambda p: p.requires_grad, model.parameters())),
         lr=args.lr, weight_decay=args.l2penalty, eps=1e-4)
+
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=60, gamma=0.5)
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    
+    
     # learning history
     train_acc_list = []
     train_acc_list_aug = []
@@ -259,6 +264,8 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
                     avg_loss,
                     train_acc_oir,
                     test_accuracy))
+            scheduler.step()
+
 
     except KeyboardInterrupt:
         print('*' * shutil.get_terminal_size().columns)
@@ -652,6 +659,7 @@ def temperature_scaled_coefficients(epoch, start_epoch=100, total_epochs=300, T_
     if epoch < start_epoch:
         return 0.0, 0.0
     
+    
     # Adjust temperature scaling based on the current epoch relative to the range from start_epoch to total_epochs
     epoch_in_range = epoch - start_epoch
     total_epochs_in_range = total_epochs - start_epoch
@@ -779,7 +787,7 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
     
         # Clamping to avoid extreme values
         recon_loss = torch.clamp(recon_loss, min=1e-8, max=1e8)
-        L_p = -torch.sum(torch.log(prob_avg) * p)  # Distribution regularization
+        # L_p = -torch.sum(torch.log(prob_avg) * p)  # Distribution regularization
         
         # args.L_p_coef * L_p
         
