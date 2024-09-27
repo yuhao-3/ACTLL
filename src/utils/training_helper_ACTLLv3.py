@@ -640,7 +640,7 @@ def hard_set_loss(hard_set_probs, y_hat, y_pred, out):
 
 
 
-def temperature_scaled_coefficients(epoch, start_epoch=100, total_epochs=300, T_corr=10.0, T_hard=10.0, k=0.1, max_corr=1.0, max_hard=1.0):
+def temperature_scaled_coefficients(epoch, start_epoch=200, total_epochs=300, T_corr=10.0, T_hard=10.0, k=0.1, max_corr=1.0, max_hard=1.0):
     """
     Temperature scaling for L_corr and L_hard coefficients.
     Coefficients increase gradually from start_epoch to total_epochs.

@@ -9,39 +9,40 @@
 
 
 
+
 # Navigate to the directory containing run_processing.py
 
 
 # Run the Python script
 
-# chmod +x run_ablation_ACTLL_TimeCNN_BMM.sh
-# ./run_ablation_ACTLL_TimeCNN_BMM.sh
+# python src/main.py \
+#     --dataset Medical\
+#     --outfile ACTLL_TimeAtteCNNv3_batch128\
+#     --ni 0.1 \
+#     --label_noise 0 \
+#     --model ACTLLv3 \
+#     --modelloss CrossEntropy \
+#     --batch_size 128\
+#     --epochs 300 \
+#     --correct_start 200 \
+#     --lr 2e-4 \
+#     --arg_interval 1 \
+#     --mean_loss_len 10 \
+#     --gamma 0.3\
+#     --sel_method 5 \
+#     --AEChoice TimeAtteCNN\
+#     --augment True \
+#     --hard True\
+#     --corr True\
+#     --warmup 20\
+#     --L_aug_coef 1 \
+#     --L_rec_coef 1 \
+#     --L_p_coef 0.1\
 
-
-python src/main.py \
-    --dataset Benchmark\
-    --outfile ACTLL_TimeAtteCNNv3_batch256_corrstart200_schedu_noSpectREAL\
-    --ni 0.3 \
-    --label_noise 0 \
-    --model ACTLLv3 \
-    --modelloss CrossEntropy \
-    --batch_size 256\
-    --epochs 300 \
-    --correct_start 200 \
-    --lr 2e-3 \
-    --sel_method 5 \
-    --AEChoice TimeAtteCNN\
-    --augment True \
-    --hard True\
-    --corr True\
-    --warmup 20\
-    --L_aug_coef 1 \
-    --L_rec_coef 1 \
-    --L_p_coef 0.1\
+chmod +x run_SOTA_ACTLL_TimeCNN_BMM_all.sh
+./run_SOTA_ACTLL_TimeCNN_BMM_all.sh
 
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##
 ##Job monitor command to list the resource usage
-
-
 my-job-stats -a -n -s

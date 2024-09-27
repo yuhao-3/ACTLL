@@ -254,33 +254,23 @@ if __name__ == '__main__':
         ucr = datasets.ucr_dataset_list()[args.from_ucr:args.end_ucr]
 
     else:
-        # ucr=['MIMIC','ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
-        #      'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
-        # ucr = ['FaceDetection', 'FingerMovements']
+        if args.dataset == "Benchmark":
+            ucr=['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
+                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
+        elif args.dataset == "Medical":
+            ucr=['MIMIC','eICU']
         
+        elif args.dataset == "All":
+            ucr=['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
+                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements','MIMIC','eICU']
         
-        # ucr = ['MIMIC']
-        ucr = ['MIMIC','eICU',]
-        # ucr =  [
-        #     # UCR Datasets
-        #     "NonInvasiveFetalECGThorax1",
-        #     "HandOutlines",
-        #     "StarLightCurves",
-        #     "PhalangesOutlinesCorrect",
-        #     "ECG5000",
-        #     "FordA",
-        #     "FordB",
+        elif args.dataset == "eICU":
+            ucr=["eICU"]
+        
+        elif args.dataset == "MIMIC":
+            ucr=['MIMIC']
             
-        #     # UEA Datasets
-        #     "BasicMotions",
-        #     "Cricket",
-        #     "Handwriting",
-        #     "InsectWingbeatSound",
-        #     "JapaneseVowels",
-        #     "PenDigits",
-        #     "PEMS-SF"
-        # ]
-
+        
     for dataset_name in ucr:
         args = parse_args()
         args.dataset = dataset_name

@@ -97,7 +97,7 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=128)
 
     # parser.add_argument('--epochs', type=int, default=30)
-    parser.add_argument('--lr', type=float, default=1e-4)
+    parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--hidden_activation', type=str, default='nn.ReLU()')
     parser.add_argument('--num_gradual', type=int, default=100)
 
@@ -377,15 +377,15 @@ if __name__ == '__main__':
             ucr=['MIMIC','eICU']
         
         elif args.dataset == "All":
-            ucr=['MIMIC','ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
-                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
+            ucr=['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
+                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements','MIMIC','eICU']
+        
         elif args.dataset == "eICU":
             ucr=["eICU"]
         
         elif args.dataset == "MIMIC":
             ucr=['MIMIC']
             
-        
             
         elif args.dataset =="Imbalance":
             ucr = [

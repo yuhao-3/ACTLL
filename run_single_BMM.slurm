@@ -19,13 +19,17 @@
 # ./run_ablation_BMM.sh
 
 
-python src/BMM_single_experiment.py \
-    --dataset MIMIC \
-    --outfile MixUp_BMM \
-    --ni 0.1 \
-    --label_noise 0 \
-    --epoch 300 \
-    --lr 1e-3 \
+# python src/BMM_single_experiment.py \
+#     --dataset MIMIC \
+#     --outfile MixUp_BMM \
+#     --ni 0.1 \
+#     --label_noise 0 \
+#     --epoch 300 \
+#     --lr 1e-3 \
+
+
+chmod +x run_SOTA_BMM.sh
+./run_SOTA_BMM.sh
 
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##

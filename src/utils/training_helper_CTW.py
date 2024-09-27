@@ -134,7 +134,7 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
     test_f1s = []
     
     # Define the StepLR scheduler, which halves the learning rate every 60 epochs
-    # scheduler = lr_scheduler.StepLR(optimizer, step_size=60, gamma=0.5)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=60, gamma=0.5)
     
     try:
         loss_all = np.zeros((args.num_training_samples, args.epochs))
@@ -197,7 +197,7 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
                     test_accuracy))
             
                 # Step the scheduler at the end of each epoch
-            # scheduler.step()
+            scheduler.step()
 
     except KeyboardInterrupt:
         print('*' * shutil.get_terminal_size().columns)

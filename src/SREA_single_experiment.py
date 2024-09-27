@@ -253,8 +253,9 @@ if __name__ == '__main__':
             ucr=['MIMIC','eICU']
         
         elif args.dataset == "All":
-            ucr=['MIMIC','ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
-                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements']
+            ucr=['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
+                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements','MIMIC','eICU']
+        
         elif args.dataset == "eICU":
             ucr=["eICU"]
         
