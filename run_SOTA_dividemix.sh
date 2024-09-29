@@ -11,6 +11,8 @@ nohup python src/main.py \
     --outfile dividemix \
     --ni 0.1 \
     --label_noise 0 \
+    --alpha 4 \
+    --lambda_u 25 \
     --model dividemix\
     --epochs 300 \
     --lr 1e-3\
@@ -20,6 +22,8 @@ nohup python src/main.py \
     --outfile dividemix \
     --ni 0.2 \
     --label_noise 0 \
+    --alpha 4 \
+    --lambda_u 25 \
     --model dividemix\
     --epochs 300 \
     --lr 1e-3\
@@ -30,6 +34,8 @@ nohup python src/main.py \
     --outfile dividemix \
     --ni 0.3 \
     --label_noise 0 \
+    --alpha 4 \
+    --lambda_u 25 \
     --model dividemix\
     --epochs 300 \
     --lr 1e-3\
@@ -40,6 +46,8 @@ nohup python src/main.py \
     --outfile dividemix\
     --ni 0.4 \
     --label_noise 0 \
+    --alpha 4 \
+    --lambda_u 25 \
     --model dividemix \
     --epochs 300 \
     --lr 1e-3\
@@ -50,6 +58,8 @@ nohup python src/main.py \
     --outfile dividemix \
     --ni 0.5 \
     --label_noise 0 \
+    --alpha 4 \
+    --lambda_u 25 \
     --model dividemix\
     --epochs 300 \
     --lr 1e-3\
@@ -62,6 +72,8 @@ nohup python src/main.py \
     --outfile dividemix \
     --ni 0.1 \
     --label_noise 1 \
+    --alpha 4 \
+    --lambda_u 25 \
     --model dividemix \
     --epochs 300 \
     --lr 1e-3\
@@ -71,6 +83,8 @@ nohup python src/main.py \
     --outfile dividemix\
     --ni 0.2 \
     --label_noise 1 \
+    --alpha 4 \
+    --lambda_u 25 \
     --model dividemix\
     --epochs 300 \
     --lr 1e-3\
@@ -81,6 +95,8 @@ nohup python src/main.py \
     --outfile dividemix \
     --ni 0.3 \
     --label_noise 1 \
+    --alpha 4 \
+    --lambda_u 25 \
     --model dividemix\
     --epochs 300 \
     --lr 1e-3\
@@ -93,6 +109,8 @@ nohup python src/main.py \
     --outfile dividemix\
     --ni 0.3 \
     --label_noise -1 \
+    --alpha 4 \
+    --lambda_u 25 \
     --model dividemix\
     --lr 1e-3\
 
@@ -102,6 +120,8 @@ nohup python src/main.py \
     --outfile dividemix \
     --ni 0.4 \
     --label_noise -1 \
+    --alpha 4 \
+    --lambda_u 25 \
     --model dividemix\
     --lr 1e-3\   
 ###########################################################################################################

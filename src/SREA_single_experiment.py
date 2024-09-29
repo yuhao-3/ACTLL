@@ -63,7 +63,7 @@ def parse_args():
     parser.add_argument('--preprocessing', type=str, default='StandardScaler',
                         help='Any available preprocessing method from sklearn.preprocessing')
 
-    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--learning_rate', type=float, default=1e-4)
     parser.add_argument('--hidden_activation', type=str, default='nn.ReLU()')

@@ -21,14 +21,19 @@
 # chmod +x run_SOTA_BMM.sh
 # ./run_SOTA_BMM.sh
 
-chmod +x run_SOTA_dividemix.sh
-./run_SOTA_dividemix.sh
 
-chmod +x run_SOTA_coteaching.sh
-./run_SOTA_coteaching.sh
+# chmod +x run_SOTA_coteaching.sh
+# ./run_SOTA_coteaching.sh
+
+# chmod +x run_SOTA_vanilla.sh
+# ./run_SOTA_vanilla.sh
+
+# chmod +x run_SOTA_dividemix.sh
+# ./run_SOTA_dividemix.sh
+
 
 chmod +x run_SOTA_SIGUA.sh
-./run_SOTA_sigua.sh
+./run_SOTA_SIGUA.sh
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##
 ##Job monitor command to list the resource usage

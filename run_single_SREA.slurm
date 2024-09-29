@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=deeplearn
 #SBATCH --qos=gpgpudeeplearn
-#SBATCH --time=30:00:00
+#SBATCH --time=50:00:00
 #SBATCH --gres=gpu:A100:1
 #SBATCH --mem=60G  # Request more memory
 #SBATCH --error=slurm-%j.err  # Capture errors in a separate file

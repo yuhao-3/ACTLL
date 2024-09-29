@@ -12,30 +12,17 @@
 
 
 # ############### Sample selection method
-
-chmod +x run_ablation_ACTLL_TimeCNN_GMM.sh
-./run_ablation_ACTLL_TimeCNN_GMM.sh
-
-chmod +x run_ablation_ACTLL_TimeCNN_Sloss.sh
-./run_ablation_ACTLL_TimeCNN_Sloss.sh
+chmod +x run_ablation_ACTLL_TimeCNN_SampleSel.sh
+./run_ablation_ACTLL_TimeCNN_SampleSel.sh
 
 # # # ############ Encoder Architecture
+chmod +x run_ablation_ACTLL_encoder.sh
+./run_ablation_ACTLL_encoder.sh
 
-chmod +x run_ablation_ACTLL_CNN_BMM.sh
-./run_ablation_ACTLL_CNN_BMM.sh
+# # # ############## Module analysis 
+chmod +x run_ablation_ACTLL_TimeCNN_module.sh
+./run_ablation_ACTLL_TimeCNN_module.sh
 
-chmod +x run_ablation_ACTLL_Diffusion_BMM.sh
-./run_ablation_ACTLL_Diffusion_BMM.sh
-
-# # # ############## Correction 
-
-chmod +x run_ablation_ACTLL_TimeCNN_BMM_nocorr.sh
-./run_ablation_ACTLL_TimeCNN_BMM_nocorr.sh
-
-# # # ############## Augmentation
-
-chmod +x run_ablation_ACTLL_TimeCNN_BMM_noaug.sh
-./run_ablation_ACTLL_TimeCNN_BMM_noaug.sh
 
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##

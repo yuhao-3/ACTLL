@@ -62,7 +62,7 @@ def parse_args():
                         help="Type of Bootstrapping guided with the BMM. Available: \
                         'None' (deactivated)(default), 'Hard' (Hard bootstrapping), 'Soft' (Soft bootstrapping), default: Hard")
 
-    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--hidden_activation', type=str, default='nn.ReLU()')

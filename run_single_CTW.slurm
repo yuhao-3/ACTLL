@@ -14,21 +14,23 @@
 
 # Run the Python script
 
-# python src/main.py \
-#     --dataset Benchmark \
-#     --outfile CTW\
-#     --ni 0.1 \
-#     --label_noise 0 \
-#     --model CTW \
-#     --epochs 300 \
-#     --batch_size 128 \
-#     --lr 1e-3 \
-#     --arg_interval 1 \
-#     --mean_loss_len 10 \
-#     --gamma 0.3\
 
-chmod +x run_SOTA_CTW.sh
-./run_SOTA_CTW.sh
+
+python src/main.py \
+    --dataset eICU\
+    --outfile CTW_dummy\
+    --ni 0.4 \
+    --label_noise -1 \
+    --model CTW \
+    --epochs 300 \
+    --batch_size 512 \
+    --lr 1e-3 \
+    --arg_interval 1 \
+    --mean_loss_len 10 \
+    --gamma 0.3\
+
+# chmod +x run_SOTA_CTW.sh
+# ./run_SOTA_CTW.sh
 
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##

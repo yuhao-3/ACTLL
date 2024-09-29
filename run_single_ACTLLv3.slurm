@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=deeplearn
 #SBATCH --qos=gpgpudeeplearn
-#SBATCH --time=30:00:00
+#SBATCH --time=50:00:00
 #SBATCH --gres=gpu:A100:1
 #SBATCH --mem=60G  # Request more memory
 #SBATCH --output=slurm-%j.out
@@ -15,34 +15,37 @@
 
 # Run the Python script
 
-# python src/main.py \
-#     --dataset Medical\
-#     --outfile ACTLL_TimeAtteCNNv3_batch128\
-#     --ni 0.1 \
-#     --label_noise 0 \
-#     --model ACTLLv3 \
-#     --modelloss CrossEntropy \
-#     --batch_size 128\
-#     --epochs 300 \
-#     --correct_start 200 \
-#     --lr 2e-4 \
-#     --arg_interval 1 \
-#     --mean_loss_len 10 \
-#     --gamma 0.3\
-#     --sel_method 5 \
-#     --AEChoice TimeAtteCNN\
-#     --augment True \
-#     --hard True\
-#     --corr True\
-#     --warmup 20\
-#     --L_aug_coef 1 \
-#     --L_rec_coef 1 \
-#     --L_p_coef 0.1\
+nohup python src/main.py \
+    --dataset eICU\
+    --outfile ACTLL_TimeAtteCNNv3\
+    --ni 0.1 \
+    --label_noise 0 \
+    --model ACTLLv3 \
+    --modelloss CrossEntropy \
+    --batch_size 512\
+    --epochs 300 \
+    --correct_start 200 \
+    --lr 1e-3 \
+    --arg_interval 1 \
+    --mean_loss_len 10 \
+    --gamma 0.3\
+    --sel_method 5 \
+    --AEChoice TimeAtteCNN\
+    --augment True \
+    --hard True\
+    --corr True\
+    --warmup 30\
+    --L_aug_coef 1 \
+    --L_rec_coef 1 \
+    --L_p_coef 0.1\
 
-chmod +x run_SOTA_ACTLL_TimeCNN_BMM_all.sh
-./run_SOTA_ACTLL_TimeCNN_BMM_all.sh
+# chmod +x run_SOTA_ACTLL_TimeCNN_BMM_all.sh
+# ./run_SOTA_ACTLL_TimeCNN_BMM_all.sh
+
 
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##
 ##Job monitor command to list the resource usage
 my-job-stats -a -n -s
+
+

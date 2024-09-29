@@ -523,12 +523,15 @@ def get_instance_noisy_label(n, train_data,labels, num_classes, norm_std, seed):
     for i, (x, y) in enumerate(zip(train_data,labels)):
         # 1*m *  m*10 = 1*10
         x = x.cuda()
+        x = x.contiguous()
         y=int(y)
+    
         A = x.view(1, -1).mm(W[y]).squeeze(0)
         A[y] = -inf
         A = flip_rate[i] * F.softmax(A, dim=0)
         A[y] += 1 - flip_rate[i]
         P.append(A)
+    
     P = torch.stack(P, 0).cpu().numpy()
     l = [i for i in range(label_num)]
     new_label = [np.random.choice(l, p=P[i]) for i in range(labels.shape[0])]
@@ -1070,61 +1073,49 @@ def select_class_by_class(model_loss,loss_all=None,args=None,epoch=None,x_idxs=N
             if args.sel_method==2:
                 clean_labels = []
                 less_confident_labels = []
+                hard_set_labels = []
 
-                cls_index = indexes[labels_numpy == i]
+                # Ensure loss values are in the range [0, 1]
                 feats = each_label_loss
+                feats[feats >= 1] = 1 - 10e-4
+                feats[feats <= 0] = 10e-4
+
+                # Flatten and convert features to required format
                 feats_ = np.ravel(feats).astype(np.float64).reshape(-1, 1)
                 
-                # print(feats_)
-                
-                # Fit GMM Model
-                gmm = GMM(n_components=2, covariance_type='full', tol=1e-6, max_iter=100)
+                # Fit Gaussian Mixture Model with 2 components (clean and noisy)
+                gmm = GMM(n_components=2, max_iter=100, random_state=0)
                 gmm.fit(feats_)
-                prob = gmm.predict_proba(feats_)
-                prob = prob[:, gmm.means_.argmin()]
-                clean_labels += [clean_idx for clean_idx in range(len(cls_index)) if
-                                 prob[clean_idx] > p_threshold]
-                model_sm_idx = torch.tensor(clean_labels).long()
-                
-                
-                less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if prob[noisy_idx] <= less_p_threshold]
-                less_confident_idx = torch.tensor(less_confident_labels).long()
-            
-            
-            ## Adaptive threshold
-            
-            elif args.sel_method==6:
-                ####################### ADAPTIVE THRESHOLD #################################
-                clean_labels = []
-                less_confident_labels = []
 
-                # Get the indices of the samples that belong to the current class (i)
+                # Predict component probabilities for each sample
+                prob = gmm.predict_proba(feats_)[:, gmm.means_.argmin()]
+
+                # Determine dynamic thresholds based on GMM means
+                mean_clean = gmm.means_[gmm.means_.argmin()]
+                mean_noisy = gmm.means_[gmm.means_.argmax()]
+
+
+                p_threshold = mean_clean
+                less_p_threshold = mean_noisy
+
+                # Clamp thresholds to valid probability range [0, 1]
+                p_threshold = np.clip(p_threshold, 0, 1)
+                less_p_threshold = np.clip(less_p_threshold, 0, 1)
+
+                # Classify indices into clean, less confident, and hard set categories
                 cls_index = indexes[labels_numpy == i]
+                clean_labels += [clean_idx for clean_idx in range(len(cls_index)) if feats[clean_idx] <= p_threshold]
+                less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if feats[noisy_idx] >= less_p_threshold]
+                hard_set_labels += [hard_idx for hard_idx in range(len(cls_index)) if (feats[hard_idx] > p_threshold and feats[hard_idx] < less_p_threshold)]
                 
-                # Extract the losses corresponding to the current class
-                class_losses = model_loss[labels_numpy == i]
-
-                # Compute mean and standard deviation for the current class
-                class_mean = torch.mean(class_losses).item()
-                class_std = torch.std(class_losses).item()
-                
-
-                # Calculate the threshold: lambda = mu + sigma
-                threshold = class_mean + class_std
-                
-
-                clean_labels += [clean_idx for clean_idx in range(len(cls_index)) if
-                                 class_losses[clean_idx] > threshold]
-                
-                
-                # Add less confident index
-                less_confident_labels += [noisy_idx for noisy_idx in range(len(cls_index)) if class_losses[noisy_idx] <= threshold]
-
-                # Convert to tensor
-                model_sm_idx = torch.tensor(clean_labels).long()
+                # Convert indices and selected probabilities to tensors
+                hard_set_idx = torch.tensor(hard_set_labels).long()
                 less_confident_idx = torch.tensor(less_confident_labels).long()
+                model_sm_idx = torch.tensor(clean_labels).long()
+                # Convert the selected hard set probabilities to a tensor
+                selected_probs = torch.tensor([prob[hard_idx] for hard_idx in range(len(cls_index)) \
+                                               if (feats[hard_idx] > p_threshold and feats[hard_idx] < less_p_threshold)], device= hard_set_probs.device)
 
-        
         
             elif args.sel_method==5:
                 clean_labels = []

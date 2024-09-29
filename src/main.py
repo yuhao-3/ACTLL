@@ -94,7 +94,7 @@ def parse_args():
     parser.add_argument('--alpha', type=float, default=32,
                         help='alpha parameter for the mixup distribution, default: 32')
 
-    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--batch_size', type=int, default=256)
 
     # parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--lr', type=float, default=1e-3)

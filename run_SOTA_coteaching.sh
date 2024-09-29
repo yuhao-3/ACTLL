@@ -11,7 +11,7 @@ nohup python src/main.py \
     --outfile co_teaching \
     --ni 0.1 \
     --label_noise 0 \
-    --model co_teaching\
+    --model co_teaching_mloss\
     --epochs 300 \
     --lr 1e-3\
 
@@ -20,7 +20,7 @@ nohup python src/main.py \
     --outfile co_teaching \
     --ni 0.2 \
     --label_noise 0 \
-    --model co_teaching\
+    --model co_teaching_mloss\
     --epochs 300 \
     --lr 1e-3\
 
@@ -31,7 +31,7 @@ nohup python src/main.py \
     --outfile co_teaching \
     --ni 0.3 \
     --label_noise 0 \
-    --model co_teaching\
+    --model co_teaching_mloss\
     --epochs 300 \
     --lr 1e-3\
 
@@ -51,7 +51,7 @@ nohup python src/main.py \
     --outfile co_teaching \
     --ni 0.5 \
     --label_noise 0 \
-    --model co_teaching\
+    --model co_teaching_mloss\
     --epochs 300 \
     --lr 1e-3\
 
@@ -72,7 +72,7 @@ nohup python src/main.py \
     --outfile co_teaching\
     --ni 0.2 \
     --label_noise 1 \
-    --model co_teaching\
+    --model co_teaching_mloss\
     --epochs 300 \
     --lr 1e-3\
 
@@ -82,7 +82,7 @@ nohup python src/main.py \
     --outfile co_teaching \
     --ni 0.3 \
     --label_noise 1 \
-    --model co_teaching\
+    --model co_teaching_mloss\
     --epochs 300 \
     --lr 1e-3\
 
@@ -94,7 +94,7 @@ nohup python src/main.py \
     --outfile co_teaching\
     --ni 0.3 \
     --label_noise -1 \
-    --model co_teaching\
+    --model co_teaching_mloss\
     --epochs 300 \
     --lr 1e-3\
 
@@ -104,7 +104,7 @@ nohup python src/main.py \
     --outfile co_teaching \
     --ni 0.4 \
     --label_noise -1 \
-    --model co_teaching\
+    --model co_teaching_mloss\
    --epochs 300 \
     --lr 1e-3\
 ###########################################################################################################

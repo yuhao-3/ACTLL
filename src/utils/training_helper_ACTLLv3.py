@@ -731,8 +731,17 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
                 epoch=epoch,
                 x_idxs=x_idx,
                 labels=y_hat
-            )    
-    
+            )
+            # Convert all indices to sets for easier set operations
+            all_indices = set(range(len(model_loss)))
+            confident_set = set(model_sel_idx.tolist())  # Indices of confident samples
+            less_confident_set = set(less_confident_idxs.tolist())  # Indices of less confident samples
+
+            # Hard set includes indices that are not in either the confident or less confident set
+            hard_set_indices = all_indices - confident_set - less_confident_set
+
+            # Convert hard_set_indices back to a tensor
+            hard_set_idxs = torch.tensor(list(hard_set_indices)).long()
         
         ################################# L_aug #####################################
         if (batch_idx % args.arg_interval == 0) and len(model_sel_idx) > 0 and args.augment:
