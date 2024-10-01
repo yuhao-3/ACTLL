@@ -94,7 +94,7 @@ def parse_args():
     parser.add_argument('--alpha', type=float, default=32,
                         help='alpha parameter for the mixup distribution, default: 32')
 
-    parser.add_argument('--batch_size', type=int, default=256)
+    parser.add_argument('--batch_size', type=int, default=128)
 
     # parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--lr', type=float, default=1e-3)
@@ -378,8 +378,10 @@ if __name__ == '__main__':
         
         elif args.dataset == "All":
             ucr=['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
-                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements','MIMIC','eICU']
-        
+                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements','MIMIC']
+     
+            # ucr=['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
+            #      'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements','MIMIC','eICU']   
         elif args.dataset == "eICU":
             ucr=["eICU"]
         

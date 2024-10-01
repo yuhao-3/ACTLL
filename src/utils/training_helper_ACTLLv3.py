@@ -178,8 +178,6 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
         criterion = nn.CrossEntropyLoss(reduce=False)
     
     classes = args.nbins
-    loss_centroids = CentroidLoss(args.embedding_size, classes, reduction='none').to(device)
-    # criterion = nn.CrossEntropyLoss(reduce=False)
     optimizer = torch.optim.Adam(
         list(filter(lambda p: p.requires_grad, model.parameters())),
         lr=args.lr, weight_decay=args.l2penalty, eps=1e-4)
@@ -197,7 +195,6 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
     
     
     p = torch.ones(classes).to(device) / classes
-    kmeans = cluster.KMeans(n_clusters=classes, random_state=args.seed)
     history_track = args.track
     yhat_hist = torch.zeros(train_loader.dataset.tensors[0].size(0), classes, history_track).to(device)
     

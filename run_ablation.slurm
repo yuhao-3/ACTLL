@@ -7,22 +7,17 @@
 #SBATCH --output=slurm-%j.out
 #SBATCH --error=slurm-%j.err  # Capture errors in a separate file
 
+############## Sample selection method
+# chmod +x scripts/run_ablation_ACTLL_TimeCNN_SampleSel.sh
+# ./scripts/run_ablation_ACTLL_TimeCNN_SampleSel.sh &  # Run in the background
 
-# Navigate to the directory containing run_processing.py
+########### Encoder Architecture
+# chmod +x scripts/run_ablation_ACTLL_encoder.sh
+# ./scripts/run_ablation_ACTLL_encoder.sh &  # Run in the background
 
-
-# ############### Sample selection method
-chmod +x run_ablation_ACTLL_TimeCNN_SampleSel.sh
-./run_ablation_ACTLL_TimeCNN_SampleSel.sh
-
-# # # ############ Encoder Architecture
-chmod +x run_ablation_ACTLL_encoder.sh
-./run_ablation_ACTLL_encoder.sh
-
-# # # ############## Module analysis 
-chmod +x run_ablation_ACTLL_TimeCNN_module.sh
-./run_ablation_ACTLL_TimeCNN_module.sh
-
+############## Module analysis 
+chmod +x scripts/run_ablation_ACTLL_TimeCNN_module.sh
+./scripts/run_ablation_ACTLL_TimeCNN_module.sh &  # Run in the background
 
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##

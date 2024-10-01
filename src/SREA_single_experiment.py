@@ -63,8 +63,8 @@ def parse_args():
     parser.add_argument('--preprocessing', type=str, default='StandardScaler',
                         help='Any available preprocessing method from sklearn.preprocessing')
 
-    parser.add_argument('--batch_size', type=int, default=256)
-    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--epochs', type=int, default=300)
     parser.add_argument('--learning_rate', type=float, default=1e-4)
     parser.add_argument('--hidden_activation', type=str, default='nn.ReLU()')
 
@@ -253,9 +253,10 @@ if __name__ == '__main__':
             ucr=['MIMIC','eICU']
         
         elif args.dataset == "All":
+            # ucr=['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
+            #      'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements','MIMIC','eICU']
             ucr=['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
-                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements','MIMIC','eICU']
-        
+                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements','MIMIC'] 
         elif args.dataset == "eICU":
             ucr=["eICU"]
         

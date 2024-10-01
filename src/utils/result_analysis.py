@@ -2,40 +2,56 @@ import os
 import pandas as pd
 
 # Directory containing the CSV files
-csv_dir = "././statistic_results/ACTLL_ablation_3_epoch300"
+csv_dir = "././statistic_results/Benchmark_MIMIC"
 
 # List of model names you want to analyze
-# model_names = ['ACTLL_TimeCNN_BMM', 'ACTLL_Diff_BMM_noAug', 'ACTLL_Diff_BMM_corr',
-#                'ACTLL_AtteDiff_BMM', 'ACTLL_CNN_BMM', 'ACTLL_Diff_BMM_all',
-#                'ACTLL_Diff_GMM', 'ACTLL_Diff_SLoss', 'MixUp_BMM',
-#                'CTW', 'SREA']
+model_names = ['ACTLL_TimeAtteCNNv3', 'ACTLL_DiffusionCNNv3', 'ACTLL_CNNv3','SREA',
+               'ACTLL_TimeAtteCNNv3_GMM','CTW','MixUp_BMM','co_teaching','dividemix',
+               'sigua','vanilla']
 
-model_names=['CTW']
+# model_names=['CTW']
 
 
 # Function to analyze each CSV file and extract performance by noise level and noise rate for both MIMIC and overall dataset
 def analyze_csv(file_path, model_name):
+    # Read the CSV file into a DataFrame
     df = pd.read_csv(file_path)
     
-    
-    # Add columns for noise level, noise rate, epoch, and learning rate based on file name or content
+    # Extract file name components
     file_info = os.path.basename(file_path).split('_')
     
-    print(file_info)
-    
-    noise_type = file_info[-6]  # e.g., 'asym'
-    noise_rate = file_info[-5]  # e.g., '30'
-    
-    # Add these as columns to the DataFrame
-    df['noise_type'] = noise_type
-    df['noise_rate'] = noise_rate
+    # Try to match the model_name from the beginning of the file name
+    # Create a joined string of the file_info parts starting from the front until a match is found
+    matched_model_name = None
+    for i in range(1, len(file_info)):
+        # Join the first i elements to form a potential model name
+        potential_model_name = '_'.join(file_info[:i])
+        if potential_model_name == model_name:
+            matched_model_name = potential_model_name
+            break
 
-    # Split into MIMIC and overall datasets based on the dataset_name column
-    if 'dataset_name' in df.columns:
-        df_mimic = df[df['dataset_name'].str.contains('MIMIC', case=False, na=False)]
-        return df_mimic, df
+    # If the model name is found in the file name, continue processing
+    if matched_model_name:
+        # Retrieve noise_type and noise_rate, assuming they come immediately after the model name
+        noise_type = file_info[i]    # e.g., 'asym' (the next part after the matched model name)
+        noise_rate = file_info[i + 1]  # e.g., '30' (the part after noise_type)
+        
+        # Add these as columns to the DataFrame
+        df['model_name'] = matched_model_name
+        df['noise_type'] = noise_type
+        df['noise_rate'] = noise_rate
+
+        # Split into MIMIC and overall datasets based on the dataset_name column
+        if 'dataset_name' in df.columns:
+            # Filter rows that contain 'MIMIC' in the dataset_name column
+            df_mimic = df[df['dataset_name'].str.contains('MIMIC', case=False, na=False)]
+            return df_mimic, df
+        else:
+            return None, df
     else:
-        return None, df
+        # If the model name doesn't match, return None or raise an exception based on preference
+        print(f"Model name '{model_name}' does not match any part of the file name '{os.path.basename(file_path)}'")
+        return None, None
 
 
 # Function to process the DataFrame and calculate the average metrics across all datasets
