@@ -14,14 +14,15 @@
 # chmod +x scripts/run_SOTA_coteaching.sh
 # ./scripts/run_SOTA_coteaching.sh 
 
-# chmod +x scripts/run_SOTA_vanilla.sh
-# ./scripts/run_SOTA_vanilla.sh 
-
 # chmod +x scripts/run_SOTA_dividemix.sh
 # ./scripts/run_SOTA_dividemix.sh 
 
-# chmod +x scripts/run_SOTA_SIGUA.sh
-# ./scripts/run_SOTA_SIGUA.sh 
+chmod +x scripts/run_SOTA_vanilla.sh
+./scripts/run_SOTA_vanilla.sh 
+
+
+chmod +x scripts/run_SOTA_SIGUA.sh
+./scripts/run_SOTA_SIGUA.sh 
 
 
 

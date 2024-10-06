@@ -208,8 +208,8 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
             # training step
             if e <= args.warmup:
                 
-                train_accuracy, avg_loss, model_new, loss_centroids, y_hat_hist = warmup_ACTLL(data_loader=train_loader,model=model, 
-                                                                                             kmeans = kmeans, loss_centroids= loss_centroids,
+                train_accuracy, avg_loss, model_new, y_hat_hist = warmup_ACTLL(data_loader=train_loader,model=model, 
+                                                                                              
                                                                             yhat_hist=yhat_hist, 
                                                                             optimizer=optimizer,
                                                                             criterion=criterion,
@@ -220,8 +220,7 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
             else:
                 train_accuracy, avg_loss, model_new, confident_set_id = train_step_ACTLLv3(
                     data_loader=train_loader,
-                    model=model,
-                    loss_centroids = loss_centroids,
+                    model=model,                    
                     optimizer=optimizer,
                     loss_all=loss_all,
                     criterion=criterion,
@@ -234,6 +233,10 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
                                                        confident_set_id=confident_set_id.astype(int),
                                                        train_dataset=train_dataset, epoch=e,
                                                        conf_num=conf_num)
+                
+                    
+                    
+                
             model = model_new
 
             if args.tsne_during_train and args.seed == args.manual_seeds[0] and e in args.tsne_epochs:
@@ -484,7 +487,7 @@ def plot_train_loss_and_test_acc(avg_train_losses,test_acc_list,args,pred_precis
 
 
 
-def warmup_ACTLL(data_loader, model, kmeans, loss_centroids, yhat_hist, optimizer, criterion,epoch=None,
+def warmup_ACTLL(data_loader, model, yhat_hist, optimizer, criterion,epoch=None,
                          loss_all=None,args=None):
     
     global_step = 0
@@ -546,7 +549,7 @@ def warmup_ACTLL(data_loader, model, kmeans, loss_centroids, yhat_hist, optimize
         yhat_hist[x_idx, :, 0] = prob.detach()  # Assign the probability to the first position
 
     
-    return (avg_accuracy / global_step,0.), avg_loss / global_step, model, loss_centroids, yhat_hist
+    return (avg_accuracy / global_step,0.), avg_loss / global_step, model, yhat_hist
 
 
 
@@ -673,7 +676,7 @@ def temperature_scaled_coefficients(epoch, start_epoch=200, total_epochs=300, T_
 
 
 
-def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion, yhat_hist, loss_all=None, epoch=0, args=None, sel_dict=None):
+def train_step_ACTLLv3(data_loader, model,  optimizer, criterion, yhat_hist, loss_all=None, epoch=0, args=None, sel_dict=None):
     
     global_step = 0
     aug_step = 0
@@ -730,7 +733,7 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
                 labels=y_hat
             )
             # Convert all indices to sets for easier set operations
-            all_indices = set(range(len(model_loss)))
+            all_indices = set(range(len(loss)))
             confident_set = set(model_sel_idx.tolist())  # Indices of confident samples
             less_confident_set = set(less_confident_idxs.tolist())  # Indices of less confident samples
 
@@ -739,6 +742,8 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
 
             # Convert hard_set_indices back to a tensor
             hard_set_idxs = torch.tensor(list(hard_set_indices)).long()
+            
+            hard_set_probs = hard_set_probs = torch.tensor([]).long()
         
         ################################# L_aug #####################################
         if (batch_idx % args.arg_interval == 0) and len(model_sel_idx) > 0 and args.augment:
@@ -786,6 +791,7 @@ def train_step_ACTLLv3(data_loader, model, loss_centroids, optimizer, criterion,
 
             # Now apply the KL divergence with the same shapes
             L_corr = F.kl_div(F.log_softmax(y_hat_one_hot, dim=-1), soft_targets, reduction='batchmean').mean()
+            
         else:
             L_corr = torch.tensor(0)
             

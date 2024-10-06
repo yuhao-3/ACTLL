@@ -67,7 +67,7 @@ def parse_args():
                                            ,'ACTLLv2','ACTLLv3'],
                         default='ACTLL')
     parser.add_argument('--modelloss', choices = ['Focal','WeightedCrossEntropy','CrossEntropy'], default = 'CrossEntropy')
-    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--epochs', type=int, default=300)
     parser.add_argument('--deleteMIMIC',default = True)
     parser.add_argument('--aug', choices=['GNoise','NoAug','Oversample','Convolve','Crop','Drift','TimeWarp','Mixup'], default='NoAug')    
     
@@ -287,6 +287,11 @@ def main(args, dataset_name=None):
         if x_train.shape[0] % batch_size == 1:
             batch_size += -1
         print(f'Batch size: {batch_size}')
+        
+        # No matter the input batch size, use larger batch size for eICU
+        if args.dataset == 'eICU':
+            batch_size = 512
+            
         args.batch_size = batch_size
         args.test_batch_size = batch_size
 
@@ -378,10 +383,8 @@ if __name__ == '__main__':
         
         elif args.dataset == "All":
             ucr=['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
-                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements','MIMIC']
-     
-            # ucr=['ArrowHead','CBF','FaceFour','MelbournePedestrian','OSULeaf','Plane','Symbols','Trace',
-            #      'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements','MIMIC','eICU']   
+                 'Epilepsy','NATOPS','EthanolConcentration', 'FaceDetection', 'FingerMovements','MIMIC','eICU']
+      
         elif args.dataset == "eICU":
             ucr=["eICU"]
         
