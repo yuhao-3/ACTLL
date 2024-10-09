@@ -7,7 +7,7 @@
 
 ############# Symmetric NOISE #############
 nohup python src/main.py \
-    --dataset eICU\
+    --dataset All\
     --outfile ACTLL_TimeAtteCNNv3_noAug\
     --ni 0.5 \
     --label_noise 0 \
@@ -32,7 +32,7 @@ nohup python src/main.py \
 
 
 nohup python src/main.py \
-    --dataset eICU\
+    --dataset All\
     --outfile ACTLL_TimeAtteCNNv3_noCorr\
     --ni 0.5 \
     --label_noise 0 \

@@ -75,6 +75,11 @@ class CentroidLoss(nn.Module):
             torch.zeros((C.size(0), C.size(0))).fill_diagonal_(1).bool().to(device), float('inf'))
         distance_reg = reduce_loss(-(torch.min(torch.log(pairwise_dist), dim=-1)[0]), reduction=reduction)
         return distance_reg
+    
+
+
+
+
 
 
 def add_to_confident_set_id(args=None,confident_set_id=None,train_dataset=None,epoch=None,conf_num=None):
@@ -87,10 +92,12 @@ def add_to_confident_set_id(args=None,confident_set_id=None,train_dataset=None,e
     for i in range(args.nbins):
         confnum_row = dict()
         confnum_row['epoch'] = epoch
-        if args.sel_method == 3:
-            confnum_row['method']='Our model'
+        if args.sel_method == 5:
+            confnum_row['method']='BMM'
+        elif args.sel_method == 2:
+            confnum_row['method'] = 'GMM'
         else: # sel_method in [1,2]
-            confnum_row['method'] = 'Class by Class'
+            confnum_row['method'] = 'Small Loss'
         confnum_row['label']=i
         confnum_row['total']=sum(ys[confident_set_id]==i)
         confnum_row['TP'] = sum((y_clean[confident_set_id][ys[confident_set_id]==i]==i))
@@ -102,6 +109,13 @@ def add_to_confident_set_id(args=None,confident_set_id=None,train_dataset=None,e
         conf_num.append(confnum_row)
     estimate_noise_rate=TP_all/(TP_all+FP_all)
     return conf_num, estimate_noise_rate
+
+
+
+
+
+
+
 
 def save_model_and_sel_dict(model,args,sel_dict=None):
     model_state_dict = model.state_dict()
@@ -202,6 +216,8 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
     try:
         loss_all = np.zeros((args.num_training_samples, args.epochs))
         conf_num = []
+        hard_num = []
+        less_conf_num = []
         
         for e in range(args.epochs):
             sel_dict = {'sel_ind': [], 'lam': [], 'mix_ind': []}
@@ -218,24 +234,32 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
                                                                             args=args)
                 
             else:
-                train_accuracy, avg_loss, model_new, confident_set_id = train_step_ACTLLv3(
-                    data_loader=train_loader,
-                    model=model,                    
-                    optimizer=optimizer,
-                    loss_all=loss_all,
-                    criterion=criterion,
-                    yhat_hist = yhat_hist,
-                    epoch=e,
-                    args=args, sel_dict=sel_dict)
+                train_accuracy, avg_loss, model_new, confident_set_id, hard_set_id, less_confident_set_id, y_corr_all = train_step_ACTLLv3(
+                                                                            data_loader=train_loader,
+                                                                            model=model,                    
+                                                                            optimizer=optimizer,
+                                                                            loss_all=loss_all,
+                                                                            criterion=criterion,
+                                                                            yhat_hist = yhat_hist,
+                                                                            epoch=e,
+                                                                            args=args, sel_dict=sel_dict)
 
                 if args.confcsv is not None: # save confident samples' id to visualize
                     conf_num, _ = add_to_confident_set_id(args=args,
                                                        confident_set_id=confident_set_id.astype(int),
                                                        train_dataset=train_dataset, epoch=e,
                                                        conf_num=conf_num)
+                    
+                    hard_num, _ = add_to_confident_set_id(args=args,
+                                                       confident_set_id=hard_set_id.astype(int),
+                                                       train_dataset=train_dataset, epoch=e,
+                                                       conf_num=hard_num)
+                    
+                    less_conf_num, _ = add_to_confident_set_id(args=args,
+                                                       confident_set_id=less_confident_set_id.astype(int),
+                                                       train_dataset=train_dataset, epoch=e,
+                                                       conf_num=less_conf_num)
                 
-                    
-                    
                 
             model = model_new
 
@@ -271,12 +295,29 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
         print('*' * shutil.get_terminal_size().columns)
         print('Exiting from training early')
 
+
     if args.confcsv is not None:
         csvpath = os.path.join(args.basicpath, 'src', 'bar_info')
         if not os.path.exists(csvpath):
             os.makedirs(csvpath)
         pd.DataFrame(conf_num).to_csv(os.path.join(csvpath, args.dataset + str(args.sel_method) + args.confcsv),
                                       mode='a', header=True)
+        
+    if args.hardcsv is not None:
+        csvpath = os.path.join(args.basicpath, 'src', 'hard_info')
+        if not os.path.exists(csvpath):
+            os.makedirs(csvpath)
+        pd.DataFrame(hard_num).to_csv(os.path.join(csvpath, args.dataset + str(args.sel_method) + args.hardcsv),
+                                      mode='a', header=True)
+        
+    if args.lessconfcsv is not None:
+        csvpath = os.path.join(args.basicpath, 'src', 'lessconf_info')
+        if not os.path.exists(csvpath):
+            os.makedirs(csvpath)
+        pd.DataFrame(less_conf_num).to_csv(os.path.join(csvpath, args.dataset + str(args.sel_method) + args.lessconfcsv),
+                                      mode='a', header=True)
+        
+        
     if args.save_model:
         save_model_and_sel_dict()
     if args.plt_loss_hist:
@@ -288,7 +329,6 @@ def train_model(model, train_loader, test_loader, args,train_dataset=None,saver=
         with torch.no_grad():
             t_sne(xs, ys, y_clean,model=model, tsne=True, args=args,datestr=datestr,sel_dict=sel_dict)
 
-    # we test the final model at line 231.
     test_results_last_ten_epochs = dict()
     test_results_last_ten_epochs['last_ten_test_acc'] = test_acc_list[-10:]
     test_results_last_ten_epochs['last_ten_test_f1'] = test_f1s[-10:]
@@ -628,14 +668,14 @@ def hard_set_loss(hard_set_probs, y_hat, y_pred, out):
     y_one_hot = F.one_hot(y_hat, num_classes=out.size(1)).float()  # y_i
     z_one_hot = F.one_hot(y_pred, num_classes=out.size(1)).float()  # z_i
     
-
+    
     # Compute the weighted combination of noisy labels and predicted labels
     weighted_labels = (1 - hard_set_probs)[:, None] * y_one_hot + hard_set_probs[:, None] * z_one_hot
-
     # Compute the loss
     loss = -torch.sum(weighted_labels * log_h, dim=1).mean()
+    
 
-    return loss
+    return loss, weighted_labels
 
 
 
@@ -685,8 +725,11 @@ def train_step_ACTLLv3(data_loader, model,  optimizer, criterion, yhat_hist, los
     avg_loss = 0.
     model = model.train()
     confident_set_id = np.array([])
+    hard_set_id = np.array([])
+    less_confident_set_id = np.array([])
     classes = args.nbins
     p = torch.ones(classes).to(device) / classes
+    y_corr_all = torch.tensor(np.array([])).to(device)
     
     
     
@@ -773,9 +816,12 @@ def train_step_ACTLLv3(data_loader, model,  optimizer, criterion, yhat_hist, los
         
         ####################### L_HARD + DATA CORRECTION FOR HARD EXAMPLES ##############
         if len(hard_set_idxs) > 0 and args.hard:
-    
             # Compute L_hard using a weighted combination of noisy labels and model's predicted labels
-            L_hard = hard_set_loss(hard_set_probs, y_hat[hard_set_idxs], y_pred[hard_set_idxs], out[hard_set_idxs])
+            L_hard, y_corr = hard_set_loss(hard_set_probs, y_hat[hard_set_idxs], y_pred[hard_set_idxs], out[hard_set_idxs])
+            
+            y_corr_label = torch.argmax(y_corr, dim=-1).view(-1)
+            y_corr_all = torch.cat((y_corr_all, y_corr_label),dim = 0)
+
         else:
             L_hard = torch.tensor(0)
             
@@ -832,6 +878,10 @@ def train_step_ACTLLv3(data_loader, model,  optimizer, criterion, yhat_hist, los
         global_step += 1
 
         confident_set_id = np.concatenate((confident_set_id, x_idx[model_sel_idx].cpu().numpy()))
+        hard_set_id = np.concatenate((hard_set_idxs, x_idx[model_sel_idx].cpu().numpy()))
+        less_confident_set_id = np.concatenate((less_confident_idxs, x_idx[model_sel_idx].cpu().numpy()))
+        
+        
 
         yhat_hist[x_idx] = yhat_hist[x_idx].roll(1, dims=-1)  # Roll the elements along the last dimension
         yhat_hist[x_idx, :, 0] = prob.detach()  # Assign the probability to the first position
@@ -839,4 +889,4 @@ def train_step_ACTLLv3(data_loader, model,  optimizer, criterion, yhat_hist, los
         
         
 
-    return (avg_accuracy / global_step, avg_accuracy_aug / aug_step), avg_loss / global_step, model, confident_set_id
+    return (avg_accuracy / global_step, avg_accuracy_aug / aug_step), avg_loss / global_step, model, confident_set_id, hard_set_id, less_confident_set_id, y_corr_all

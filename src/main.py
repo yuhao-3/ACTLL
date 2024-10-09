@@ -133,7 +133,7 @@ def parse_args():
     # Suppress terminal out
     parser.add_argument('--disable_print', action='store_true', default=False)
     parser.add_argument('--plt_embedding', action='store_true', default=False)
-    parser.add_argument('--plt_loss_hist', action='store_true', default=False)
+    parser.add_argument('--plt_loss_hist', action='store_true', default=True)
     parser.add_argument('--plt_cm', action='store_true', default=False)
     parser.add_argument('--headless', action='store_true', default=False, help='Matplotlib backend')
     parser.add_argument('--beta',type=float,nargs='+',default=[0.,3.],help='the coefficient of model_loss2')
@@ -183,8 +183,15 @@ def parse_args():
                         help='the coefficient of L_e')
     
     
-    parser.add_argument('--confcsv', type=str, default="",
+    parser.add_argument('--confcsv', type=str, default=" ",
                         help='the file of saving conf_num')
+    parser.add_argument('--hardcsv', type=str, default=" ",
+                        help='the file of saving hard_num')
+    parser.add_argument('--lessconfcsv', type=str, default=" ",
+                        help='the file of saving lessconf_num')
+    
+    
+    
     parser.add_argument('--whole_data_select', action='store_true', default=False,
                         help='if select from whole data')
     parser.add_argument('--p_threshold', default=0.5, type=float, help='clean probability threshold')
@@ -391,7 +398,6 @@ if __name__ == '__main__':
         elif args.dataset == "MIMIC":
             ucr=['MIMIC']
             
-            
         elif args.dataset =="Imbalance":
             ucr = [
                 # UCR Datasets
@@ -412,7 +418,6 @@ if __name__ == '__main__':
                 "JapaneseVowels",
                 "PenDigits",
                 "PEMS-SF"
-                
             ]
         else:
             ucr =["ArrowHead"]
