@@ -4,4 +4,6 @@ results/
 *.err*
 *.out*
 *.csv*
-bar_info/
+bar_info/*
+hard_info/*
+lessconf_info/*
