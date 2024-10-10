@@ -670,7 +670,9 @@ def hard_set_loss(hard_set_probs, y_hat, y_pred, out):
     
     
     # Compute the weighted combination of noisy labels and predicted labels
-    weighted_labels = (1 - hard_set_probs)[:, None] * y_one_hot + hard_set_probs[:, None] * z_one_hot
+    # weighted_labels = (1 - hard_set_probs)[:, None] * y_one_hot + hard_set_probs[:, None] * z_one_hot
+    
+    weighted_labels = (1 - hard_set_probs)[:, None] * z_one_hot + hard_set_probs[:, None] * y_one_hot
     # Compute the loss
     loss = -torch.sum(weighted_labels * log_h, dim=1).mean()
     

@@ -18,8 +18,8 @@
 
 nohup python src/main.py \
     --dataset All\
-    --outfile ACTLL_TimeAtteCNNv3_GMM\
-    --ni 0.6 \
+    --outfile ACTLL_TimeAtteCNNv3_BMM_random\
+    --ni 0.1 \
     --label_noise 0 \
     --model ACTLLv3 \
     --modelloss CrossEntropy \
@@ -30,7 +30,7 @@ nohup python src/main.py \
     --arg_interval 1 \
     --mean_loss_len 10 \
     --gamma 0.3\
-    --sel_method 2 \
+    --sel_method 5 \
     --AEChoice TimeAtteCNN\
     --augment True \
     --hard True\
