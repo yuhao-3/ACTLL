@@ -1,4 +1,5 @@
 # <img src= "picture/unimelb.png"  width=10% align=left>  Dynamical Label Augmentation and Calibration for Noisy Electronic Health Records
+[*"Dynamical Label Augmentation and Calibration for Noisy Electronic Health Records"*](https://openreview.net/forum?id=9D0fELXbrg) (PAKDD-25).
 
 
 ## Abstracts
@@ -60,3 +61,17 @@ We adapted the following open-source code to implement the state-of-the-art algo
 * [Dividemix](https://github.com/LiJunnan1992/DivideMix)
 * [SREA](https://github.com/Castel44/SREA)
 * [CTW](https://github.com/qianlima-lab/CTW)
+
+
+## Citation
+If you use this code for your research, please cite our paper:
+```
+@inproceedings{
+liu2023scaleteaching,
+title={Scale-teaching: Robust Multi-scale Training for Time Series Classification with Noisy Labels},
+author={Zhen Liu and Peitian Ma and Dongliang Chen and Wenbin Pei and Qianli Ma},
+booktitle={Thirty-seventh Conference on Neural Information Processing Systems},
+year={2023},
+url={https://openreview.net/forum?id=9D0fELXbrg}
+}
+```
