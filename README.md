@@ -1,4 +1,5 @@
 # <img src= "picture/unimelb.png"  width=10% align=left>  Dynamical Label Augmentation and Calibration for Noisy Electronic Health Records
+This is the formal implementation of our paper: 
 [*"Dynamical Label Augmentation and Calibration for Noisy Electronic Health Records"*](https://openreview.net/forum?id=9D0fELXbrg) (PAKDD-25).
 
 
