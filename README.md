@@ -5,7 +5,7 @@
 Medical research, particularly in predicting patient outcomes, heavily relies on medical time series data extracted from Electronic Health Records (EHR), which provide extensive information on patient histories. Despite rigorous examination, labeling errors are inevitable and can significantly impede accurate predictions of patient outcomes. To address this challenge, we propose an Attention-based Learning Framework with Dynamic Calibration and Augmentation for Time series Noisy Label Learning (ACTLL). This framework leverages a two-component Beta mixture model to identify the certain and uncertain sets of instances based on the fitness distribution of each class, and it captures global temporal dynamics while dynamically calibrating labels from the uncertain set or augmenting confident instances from the certain set. Experimental results on large-scale EHR datasets eICU and MIMIC-IV-ED, and several benchmark datasets from the UCR and UEA repositories, demonstrate that our model ACTLL has achieved state-of-the-art performance, especially under high noise levels.
 
 <div align="center">
-<img src="picture/Model.png" width="70%">
+<img src="picture/model.png" width="70%">
 </div>
 
 ## Data
