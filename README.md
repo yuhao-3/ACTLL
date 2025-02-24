@@ -37,7 +37,7 @@ Download the core directory from MIMIC-IV
 [eICU](https://physionet.org/content/eicu-crd/2.0/.)
 
 To get preprocessed eICU dataset: Follow the same procedure in eICU Pre-Processing section in [GNN-LSTM](https://github.com/EmmaRocheteau/eICU-GNN-LSTM)
-- Note: eICU dataset can be extremely cumbersome to process, please be patient.
+- Note: eICU dataset can be extremely troublesome to process, please be patient.
 - Put folder "eICU" into 'src/EHR\_data/eICU'
 
 
