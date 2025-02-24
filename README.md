@@ -1,9 +1,8 @@
 # <img src= "picture/unimelb.png"  width=20% align=left>  Attention-based learning with dynamic Calibration and augmentation for Time series noisy Label Learning 
 
 
-## Abstract
- Medical research, including predicting patient outcomes, heavily relies on medical time series data collected through Electronic Health Records(EHR) with rich information on patient history. Despite careful examination of medical data, labeling errors originating from human annotation are an unavoidable phenomenon, posing significant disturbance to the effective prediction of patient outcomes. Thus, we propose a learning of Attention-based learning with dynamic Calibration and augmentation for Time series noisy Label Learning that captures better temporal dynamics, as well as dynamically calibrates uncertain class labels or augments confident instances based on mean of two components by each mixture models per class. Experiments under eICU, MIMIC-IV-ED and several benchmark datasets from UCR and UEA repository have illustrated comparable or even state-of-the-art results. Our code is available at: https://github.com/yuhao-3/ACTLL.
-
+## Abstracts
+Medical research, particularly in predicting patient outcomes, heavily relies on medical time series data extracted from Electronic Health Records (EHR), which provide extensive information on patient histories. Despite rigorous examination, labeling errors are inevitable and can significantly impede accurate predictions of patient outcomes. To address this challenge, we propose an Attention-based Learning Framework with Dynamic Calibration and Augmentation for Time series Noisy Label Learning (ACTLL). This framework leverages a two-component Beta mixture model to identify the certain and uncertain sets of instances based on the fitness distribution of each class, and it captures global temporal dynamics while dynamically calibrating labels from the uncertain set or augmenting confident instances from the certain set. Experimental results on large-scale EHR datasets eICU and MIMIC-IV-ED, and several benchmark datasets from the UCR and UEA repositories, demonstrate that our model ACTLL has achieved state-of-the-art performance, especially under high noise levels.
 
 <div align="center">
 <img src="picture/Model.png" width="70%">

@@ -9,7 +9,7 @@
 nohup python src/main.py \
     --dataset All\
     --outfile ACTLL_TimeAtteCNNv3_BMM\
-    --ni 0.6 \
+    --ni 0.5 \
     --label_noise 0 \
     --model ACTLLv3 \
     --modelloss CrossEntropy \
@@ -33,7 +33,7 @@ nohup python src/main.py \
 nohup python src/main.py \
     --dataset All\
     --outfile ACTLL_TimeAtteCNNv3_GMM\
-    --ni 0.6 \
+    --ni 0.5 \
     --label_noise 0 \
     --model ACTLLv3 \
     --modelloss CrossEntropy \
@@ -59,7 +59,7 @@ nohup python src/main.py \
 nohup python src/main.py \
     --dataset All\
     --outfile ACTLL_TimeAtteCNNv3_SLoss\
-    --ni 0.6 \
+    --ni 0.5 \
     --label_noise 0 \
     --model ACTLLv3 \
     --modelloss CrossEntropy \

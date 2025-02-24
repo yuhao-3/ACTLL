@@ -107,7 +107,10 @@ def add_to_confident_set_id(args=None,confident_set_id=None,train_dataset=None,e
         confnum_row['seed'] = args.seed
 
         conf_num.append(confnum_row)
-    estimate_noise_rate=TP_all/(TP_all+FP_all)
+    if (TP_all + FP_all) > 0:
+        estimate_noise_rate = TP_all / (TP_all + FP_all)
+    else:
+        estimate_noise_rate = 0  # or handle it in a way that suits your use case
     return conf_num, estimate_noise_rate
 
 
