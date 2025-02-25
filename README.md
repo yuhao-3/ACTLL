@@ -63,6 +63,8 @@ We adapted the following open-source code to implement the state-of-the-art algo
 * [SREA](https://github.com/Castel44/SREA)
 * [CTW](https://github.com/qianlima-lab/CTW)
 
+## Appendix
+Check out our supplementary material inside our repository as well: Appendix_for_Dynamical_Label_Augmentation_and_Calibration_for_Noisy_Electronic_Health_Records.pdf
 
 ## Citation
 If you use this code for your research, please cite our paper:
