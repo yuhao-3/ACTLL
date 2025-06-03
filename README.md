@@ -1,6 +1,6 @@
 # <img src= "picture/unimelb.png"  width=10% align=left>  Dynamical Label Augmentation and Calibration for Noisy Electronic Health Records
 This is the formal implementation of our paper: 
-[*"Dynamical Label Augmentation and Calibration for Noisy Electronic Health Records"*](https://openreview.net/forum?id=9D0fELXbrg) (PAKDD-25).
+[*"Dynamical Label Augmentation and Calibration for Noisy Electronic Health Records"*](https://www.arxiv.org/abs/2505.07320) (PAKDD-25).
 
 
 ## Abstracts
@@ -66,7 +66,7 @@ We adapted the following open-source code to implement the state-of-the-art algo
 ## Appendix
 Check out our supplementary material inside our repository as well: Appendix_for_Dynamical_Label_Augmentation_and_Calibration_for_Noisy_Electronic_Health_Records.pdf
 
-## Citation
+<!-- ## Citation
 If you use this code for your research, please cite our paper:
 ```
 @inproceedings{
@@ -76,5 +76,5 @@ author={Zhen Liu and Peitian Ma and Dongliang Chen and Wenbin Pei and Qianli Ma}
 booktitle={Thirty-seventh Conference on Neural Information Processing Systems},
 year={2023},
 url={https://openreview.net/forum?id=9D0fELXbrg}
-}
+} -->
 ```
