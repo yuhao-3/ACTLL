@@ -66,15 +66,28 @@ We adapted the following open-source code to implement the state-of-the-art algo
 ## Appendix
 Check out our supplementary material inside our repository as well: Appendix_for_Dynamical_Label_Augmentation_and_Calibration_for_Noisy_Electronic_Health_Records.pdf
 
-<!-- ## Citation
+## Citation
 If you use this code for your research, please cite our paper:
 ```
-@inproceedings{
-liu2023scaleteaching,
-title={Scale-teaching: Robust Multi-scale Training for Time Series Classification with Noisy Labels},
-author={Zhen Liu and Peitian Ma and Dongliang Chen and Wenbin Pei and Qianli Ma},
-booktitle={Thirty-seventh Conference on Neural Information Processing Systems},
-year={2023},
-url={https://openreview.net/forum?id=9D0fELXbrg}
-} -->
+@InProceedings{10.1007/978-981-96-8170-9_37,
+author="Li, Yuhao
+and Luo, Ling
+and Aickelin, Uwe",
+editor="Wu, Xintao
+and Spiliopoulou, Myra
+and Wang, Can
+and Kumar, Vipin
+and Cao, Longbing
+and Wu, Yanqiu
+and Yao, Yu
+and Wu, Zhangkai",
+title="Dynamical Label Augmentation and Calibration for Noisy Electronic Health Records",
+booktitle="Advances in Knowledge Discovery and Data Mining ",
+year="2025",
+publisher="Springer Nature Singapore",
+address="Singapore",
+pages="478--489",
+abstract="Medical research, particularly in predicting patient outcomes, heavily relies on medical time series data extracted from Electronic Health Records (EHR), which provide extensive information on patient histories. Despite rigorous examination, labeling errors are inevitable and can significantly impede accurate predictions of patient outcome. To address this challenge, we propose an Attention-based Learning Framework with Dynamic Calibration and Augmentation for Time series Noisy Label Learning (ACTLL). This framework leverages a two-component Beta mixture model to identify the certain and uncertain sets of instances based on the fitness distribution of each class, and it captures global temporal dynamics while dynamically calibrating labels from the uncertain set or augmenting confident instances from the certain set. Experimental results on large-scale EHR datasets eICU and MIMIC-IV-ED, and several benchmark datasets from the UCR and UEA repositories, demonstrate that our model ACTLL has achieved state-of-the-art performance, especially under high noise levels.",
+isbn="978-981-96-8170-9"
+}
 ```
